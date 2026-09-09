@@ -70,6 +70,30 @@ export const LenderHub: React.FC<LenderHubProps> = ({
     }
   };
 
+  // Compute real on-chain aggregate statistics (nothing hardcoded)
+  const totalDeposited = pools.reduce((acc, p) => acc + p.total_deposited, 0n);
+  const totalLiquidity = pools.reduce((acc, p) => acc + p.pool_liquidity, 0n);
+  const totalLent = pools.reduce((acc, p) => acc + p.total_lent, 0n);
+  const poolCount = pools.length;
+  
+  const overallUtilization =
+    totalDeposited > 0n ? Number((totalLent * 10000n) / totalDeposited) / 100 : 0;
+    
+  const weightedAprBps =
+    totalDeposited > 0n
+      ? Number(
+          pools.reduce(
+            (acc, p) => acc + BigInt(p.interest_rate_bps) * p.total_deposited,
+            0n
+          ) / totalDeposited
+        )
+      : 0;
+
+  const avgMinCollateralBps =
+    poolCount > 0
+      ? Math.round(pools.reduce((acc, p) => acc + p.min_collateral_ratio_bps, 0) / poolCount)
+      : 0;
+
   return (
     <div className="space-y-8">
       {/* Top Banner */}
@@ -94,6 +118,57 @@ export const LenderHub: React.FC<LenderHubProps> = ({
         </button>
       </div>
 
+      {/* Aggregate On-Chain Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="p-4 rounded-xl glass-panel border-cyan-500/30 bg-slate-900/60 flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Protocol TVL</div>
+          <div className="text-lg sm:text-xl font-bold font-mono text-white mt-1">
+            {formatNight(totalDeposited)}
+          </div>
+          <div className="text-[10px] text-cyan-400 font-mono mt-0.5">Real Contract State</div>
+        </div>
+
+        <div className="p-4 rounded-xl glass-panel border-emerald-500/30 bg-slate-900/60 flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Available Liquidity</div>
+          <div className="text-lg sm:text-xl font-bold font-mono text-emerald-400 mt-1">
+            {formatNight(totalLiquidity)}
+          </div>
+          <div className="text-[10px] text-emerald-400/80 font-mono mt-0.5">Ready for Borrowers</div>
+        </div>
+
+        <div className="p-4 rounded-xl glass-panel border-purple-500/30 bg-slate-900/60 flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Active Capital Lent</div>
+          <div className="text-lg sm:text-xl font-bold font-mono text-purple-300 mt-1">
+            {formatNight(totalLent)}
+          </div>
+          <div className="text-[10px] text-purple-400/80 font-mono mt-0.5">Secured by ZK Proofs</div>
+        </div>
+
+        <div className="p-4 rounded-xl glass-panel border-blue-500/30 bg-slate-900/60 flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Active Pools</div>
+          <div className="text-lg sm:text-xl font-bold font-mono text-cyan-300 mt-1">
+            {poolCount} {poolCount === 1 ? 'Pool' : 'Pools'}
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5">On Midnight Ledger</div>
+        </div>
+
+        <div className="p-4 rounded-xl glass-panel border-amber-500/30 bg-slate-900/60 flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Weighted APR</div>
+          <div className="text-lg sm:text-xl font-bold font-mono text-amber-400 mt-1">
+            {formatBps(weightedAprBps)}
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Weighted by Liquidity</div>
+        </div>
+
+        <div className="p-4 rounded-xl glass-panel border-indigo-500/30 bg-slate-900/60 flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Pool Utilization</div>
+          <div className="text-lg sm:text-xl font-bold font-mono text-indigo-300 mt-1">
+            {overallUtilization.toFixed(1)}%
+          </div>
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Min CR: {formatBps(avgMinCollateralBps)}</div>
+        </div>
+      </div>
+
       {/* Pools Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -106,7 +181,23 @@ export const LenderHub: React.FC<LenderHubProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {pools.length === 0 ? (
+          <div className="glass-panel p-12 text-center text-slate-400 space-y-3">
+            <Coins className="w-10 h-10 text-cyan-400/50 mx-auto" />
+            <h4 className="text-base font-bold text-white">No Lending Pools Deployed Yet</h4>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Be the first liquidity provider to deploy a lending pool on Midnight. Define custom income floors, DTI ceilings, and collateral terms.
+            </p>
+            <button
+              onClick={() => setShowModal(true)}
+              className="btn-primary text-xs !py-2.5 !px-4 mx-auto"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Deploy First Lending Pool</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {pools.map((pool) => {
             const utilization =
               pool.total_deposited > 0n
@@ -193,6 +284,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Modal for Creating New Lending Pool */}

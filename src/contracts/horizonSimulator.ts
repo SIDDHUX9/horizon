@@ -463,6 +463,10 @@ export class HorizonProtocol {
       proof_verified: true,
     };
 
+    proofTrace.tx_hash = tx.tx_hash;
+    proofTrace.block_height = tx.block_height;
+    proofTrace.proof_size_bytes = 1024;
+
     this.state.transactions.push(tx);
     this.saveState();
     return { loan, proofTrace, tx };

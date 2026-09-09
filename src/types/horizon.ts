@@ -68,6 +68,10 @@ export interface ZKProofTrace {
   is_valid: boolean;
   timestamp: number;
   proof_hash: string;
+  proof_size_bytes?: number;
+  duration_ms?: number;
+  tx_hash?: string;
+  block_height?: number;
 }
 
 export interface ExplorerTransaction {

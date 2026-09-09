@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "compile:compact": "node scripts/compile-compact.js",
     "prove:real": "node scripts/generate-real-proof.js",
-    "deploy:midnight": "node scripts/deploy-midnight.js"
+    "deploy:midnight": "node scripts/deploy-midnight.js",
+    "lifecycle:run": "node scripts/execute-lifecycle.js"
   },
   "dependencies": {
     "@midnight-ntwrk/dapp-connector-api": "^4.0.1",

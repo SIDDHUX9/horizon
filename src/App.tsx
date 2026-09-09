@@ -390,7 +390,13 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'explorer' && (
-          <TransparencyExplorer transactions={transactions} blockHeight={blockHeight} />
+          <TransparencyExplorer
+            transactions={transactions}
+            blockHeight={blockHeight}
+            loans={loans}
+            pools={pools}
+            repayments={repayments}
+          />
         )}
 
         {activeTab === 'contract' && <ContractCodeViewer />}
