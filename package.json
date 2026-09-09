@@ -12,6 +12,7 @@
     "deploy:midnight": "node scripts/deploy-midnight.js"
   },
   "dependencies": {
+    "@midnight-ntwrk/dapp-connector-api": "^4.0.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",

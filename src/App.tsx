@@ -13,7 +13,11 @@ import {
 } from './contracts/horizonSimulator';
 import { EditorialLandingPage } from './components/EditorialLandingPage';
 import { WalletModal } from './components/WalletModal';
-import { detectLaceWallet, connectLaceWallet } from './services/laceWallet';
+import { 
+  getAvailableMidnightWallets, 
+  connectLaceWallet, 
+  DiscoveredWallet 
+} from './services/laceWallet';
 import { 
   LendingPool, 
   Loan, 
@@ -27,10 +31,16 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('landing');
   const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [shieldedAddress, setShieldedAddress] = useState<string | undefined>(undefined);
+  const [dustBalance, setDustBalance] = useState<bigint | undefined>(undefined);
+  const [dustCap, setDustCap] = useState<bigint | undefined>(undefined);
+  const [networkId, setNetworkId] = useState<string | undefined>('Midnight Preview');
+  const [indexerUri, setIndexerUri] = useState<string | undefined>(undefined);
+  const [selectedNetwork, setSelectedNetwork] = useState<string>('preview');
   const [userNightBalance, setUserNightBalance] = useState<bigint>(0n);
 
   const [walletModalOpen, setWalletModalOpen] = useState(false);
-  const [laceDetected, setLaceDetected] = useState(false);
+  const [discoveredWallets, setDiscoveredWallets] = useState<DiscoveredWallet[]>([]);
   const [isConnectingLace, setIsConnectingLace] = useState(false);
   const [laceError, setLaceError] = useState<string | null>(null);
 
@@ -53,24 +63,29 @@ export const App: React.FC = () => {
   };
 
   const checkLace = async () => {
-    const detected = await detectLaceWallet();
-    setLaceDetected(detected);
+    const wallets = getAvailableMidnightWallets();
+    setDiscoveredWallets(wallets);
   };
 
   useEffect(() => {
     checkLace();
   }, []);
 
-  const handleConnectLace = async () => {
+  const handleConnectLace = async (walletId?: string) => {
     setIsConnectingLace(true);
     setLaceError(null);
     try {
-      const { address } = await connectLaceWallet();
-      setUserAddress(address);
+      const session = await connectLaceWallet(walletId, selectedNetwork);
+      setUserAddress(session.unshieldedAddress);
+      setShieldedAddress(session.shieldedAddress);
+      setDustBalance(session.dustBalance);
+      setDustCap(session.dustCap);
+      setNetworkId(session.config?.networkId || `Midnight ${selectedNetwork}`);
+      setIndexerUri(session.config?.indexerUri);
       setWalletConnected(true);
       setUserNightBalance(250000n);
       setWalletModalOpen(false);
-      showToast(`Connected to Midnight Lace: ${address.slice(0, 8)}...${address.slice(-6)}`, 'success');
+      showToast(`Connected to ${session.walletName}: ${session.unshieldedAddress.slice(0, 8)}...${session.unshieldedAddress.slice(-6)}`, 'success');
     } catch (err: any) {
       setLaceError(err.message || 'Failed to connect to Midnight Lace wallet.');
     } finally {
@@ -80,6 +95,10 @@ export const App: React.FC = () => {
 
   const handleDisconnectLace = () => {
     setUserAddress(null);
+    setShieldedAddress(undefined);
+    setDustBalance(undefined);
+    setDustCap(undefined);
+    setIndexerUri(undefined);
     setWalletConnected(false);
     setUserNightBalance(0n);
     setWalletModalOpen(false);
@@ -256,9 +275,16 @@ export const App: React.FC = () => {
           onConnect={handleConnectLace}
           isConnecting={isConnectingLace}
           errorMessage={laceError}
-          laceDetected={laceDetected}
+          discoveredWallets={discoveredWallets}
           onCheckDetection={checkLace}
           connectedAddress={userAddress}
+          shieldedAddress={shieldedAddress}
+          dustBalance={dustBalance}
+          dustCap={dustCap}
+          networkId={networkId}
+          indexerUri={indexerUri}
+          selectedNetwork={selectedNetwork}
+          onSelectNetwork={setSelectedNetwork}
           onDisconnect={handleDisconnectLace}
         />
 
@@ -306,9 +332,16 @@ export const App: React.FC = () => {
         onConnect={handleConnectLace}
         isConnecting={isConnectingLace}
         errorMessage={laceError}
-        laceDetected={laceDetected}
+        discoveredWallets={discoveredWallets}
         onCheckDetection={checkLace}
         connectedAddress={userAddress}
+        shieldedAddress={shieldedAddress}
+        dustBalance={dustBalance}
+        dustCap={dustCap}
+        networkId={networkId}
+        indexerUri={indexerUri}
+        selectedNetwork={selectedNetwork}
+        onSelectNetwork={setSelectedNetwork}
         onDisconnect={handleDisconnectLace}
       />
 
