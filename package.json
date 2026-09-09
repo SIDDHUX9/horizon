@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "compile:compact": "node scripts/compile-compact.js"
+    "compile:compact": "node scripts/compile-compact.js",
+    "prove:real": "node scripts/generate-real-proof.js",
+    "deploy:midnight": "node scripts/deploy-midnight.js"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

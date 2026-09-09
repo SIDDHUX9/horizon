@@ -11,6 +11,9 @@ import {
   horizon, 
   formatNight 
 } from './contracts/horizonSimulator';
+import { EditorialLandingPage } from './components/EditorialLandingPage';
+import { WalletModal } from './components/WalletModal';
+import { detectLaceWallet, connectLaceWallet } from './services/laceWallet';
 import { 
   LendingPool, 
   Loan, 
@@ -21,11 +24,15 @@ import {
 } from './types/horizon';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('pitch');
-  const [walletConnected, setWalletConnected] = useState<boolean>(true);
-  const [userNightBalance, setUserNightBalance] = useState<bigint>(250000n); // 250k NIGHT
+  const [activeTab, setActiveTab] = useState<string>('landing');
+  const [walletConnected, setWalletConnected] = useState<boolean>(false);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [userNightBalance, setUserNightBalance] = useState<bigint>(0n);
 
-  const defaultBorrower = '0x7a31f9820000000000000000000000000000000000000000000000000000f982';
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [laceDetected, setLaceDetected] = useState(false);
+  const [isConnectingLace, setIsConnectingLace] = useState(false);
+  const [laceError, setLaceError] = useState<string | null>(null);
 
   // Protocol state synced from horizon simulator
   const [pools, setPools] = useState<LendingPool[]>(() => horizon.getPools());
@@ -35,9 +42,7 @@ export const App: React.FC = () => {
   const [blockHeight, setBlockHeight] = useState<number>(() => horizon.getBlockHeight());
   const [currentTime, setCurrentTime] = useState<bigint>(() => horizon.getCurrentTime());
 
-  const [currentCommitment, setCurrentCommitment] = useState<string | undefined>(() =>
-    horizon.getBorrowerSnapshotCommitment(defaultBorrower)
-  );
+  const [currentCommitment, setCurrentCommitment] = useState<string | undefined>(undefined);
 
   const [selectedPoolForBorrow, setSelectedPoolForBorrow] = useState<string | undefined>(undefined);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -47,6 +52,40 @@ export const App: React.FC = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const checkLace = async () => {
+    const detected = await detectLaceWallet();
+    setLaceDetected(detected);
+  };
+
+  useEffect(() => {
+    checkLace();
+  }, []);
+
+  const handleConnectLace = async () => {
+    setIsConnectingLace(true);
+    setLaceError(null);
+    try {
+      const { address } = await connectLaceWallet();
+      setUserAddress(address);
+      setWalletConnected(true);
+      setUserNightBalance(250000n);
+      setWalletModalOpen(false);
+      showToast(`Connected to Midnight Lace: ${address.slice(0, 8)}...${address.slice(-6)}`, 'success');
+    } catch (err: any) {
+      setLaceError(err.message || 'Failed to connect to Midnight Lace wallet.');
+    } finally {
+      setIsConnectingLace(false);
+    }
+  };
+
+  const handleDisconnectLace = () => {
+    setUserAddress(null);
+    setWalletConnected(false);
+    setUserNightBalance(0n);
+    setWalletModalOpen(false);
+    showToast('Lace wallet disconnected.', 'info');
+  };
+
   const refreshState = () => {
     setPools(horizon.getPools());
     setLoans(horizon.getLoans());
@@ -54,7 +93,9 @@ export const App: React.FC = () => {
     setTransactions(horizon.getTransactions());
     setBlockHeight(horizon.getBlockHeight());
     setCurrentTime(horizon.getCurrentTime());
-    setCurrentCommitment(horizon.getBorrowerSnapshotCommitment(defaultBorrower));
+    if (userAddress) {
+      setCurrentCommitment(horizon.getBorrowerSnapshotCommitment(userAddress));
+    }
   };
 
   // Periodic clock update
@@ -87,9 +128,15 @@ export const App: React.FC = () => {
     interest_rate_bps: number;
     term_duration: bigint;
   }) => {
+    if (!walletConnected || !userAddress) {
+      setWalletModalOpen(true);
+      showToast('Midnight Lace Wallet required to create a pool.', 'error');
+      throw new Error('Midnight Lace wallet not connected.');
+    }
+
     const { pool } = await horizon.createLendingPool({
       ...params,
-      lender: defaultBorrower,
+      lender: userAddress,
     });
     setUserNightBalance((prev) => prev - params.deposit_amount);
     refreshState();
@@ -98,6 +145,12 @@ export const App: React.FC = () => {
 
   // CIRCUIT 2: Submit Snapshot
   const handleSnapshotSubmitted = async (borrower: string, snapshot: FinancialSnapshot): Promise<string> => {
+    if (!walletConnected || !userAddress) {
+      setWalletModalOpen(true);
+      showToast('Midnight Lace Wallet required to submit financial snapshot.', 'error');
+      throw new Error('Midnight Lace wallet not connected.');
+    }
+
     const { commitment } = await horizon.submitFinancialSnapshot(borrower, snapshot);
     refreshState();
     showToast(`Snapshot commitment ${commitment.slice(0, 14)}... stored on-chain!`, 'success');
@@ -112,11 +165,20 @@ export const App: React.FC = () => {
     collateral_deposit: bigint;
     snapshot_witness: FinancialSnapshot;
   }): Promise<ZKProofTrace> => {
+    if (!walletConnected || !userAddress) {
+      setWalletModalOpen(true);
+      showToast('Midnight Lace Wallet required to request loan.', 'error');
+      throw new Error('Midnight Lace wallet not connected.');
+    }
+
     if (params.collateral_deposit > userNightBalance) {
       throw new Error(`Insufficient wallet balance to deposit collateral. You have ${formatNight(userNightBalance)}.`);
     }
 
-    const { loan, proofTrace } = await horizon.requestLoan(params);
+    const { loan, proofTrace } = await horizon.requestLoan({
+      ...params,
+      borrower: userAddress,
+    });
     // Deduct collateral from user, add disbursed loan
     setUserNightBalance((prev) => prev - params.collateral_deposit + params.requested_amount);
     refreshState();
@@ -129,9 +191,15 @@ export const App: React.FC = () => {
 
   // CIRCUIT 4: Repay Loan
   const handleRepayLoan = async (loanId: string, amount: bigint): Promise<boolean> => {
+    if (!walletConnected || !userAddress) {
+      setWalletModalOpen(true);
+      showToast('Midnight Lace Wallet required to repay loan.', 'error');
+      throw new Error('Midnight Lace wallet not connected.');
+    }
+
     const { loan, isFullyRepaid } = await horizon.repayLoan({
       loan_id: loanId,
-      payer: defaultBorrower,
+      payer: userAddress,
       repay_amount: amount,
     });
     setUserNightBalance((prev) => prev - amount);
@@ -148,9 +216,15 @@ export const App: React.FC = () => {
 
   // CIRCUIT 5: Liquidate
   const handleLiquidate = async (loanId: string) => {
+    if (!walletConnected || !userAddress) {
+      setWalletModalOpen(true);
+      showToast('Midnight Lace Wallet required to trigger liquidation.', 'error');
+      throw new Error('Midnight Lace wallet not connected.');
+    }
+
     await horizon.liquidate({
       loan_id: loanId,
-      liquidator: defaultBorrower,
+      liquidator: userAddress,
     });
     refreshState();
     showToast(`Permissionless liquidation completed! Seized collateral credited to pool.`, 'success');
@@ -164,6 +238,50 @@ export const App: React.FC = () => {
   const currentTimeDate = new Date(Number(currentTime) * 1000);
   const currentTimeStr = currentTimeDate.toLocaleDateString() + ' ' + currentTimeDate.toLocaleTimeString();
 
+  if (activeTab === 'landing') {
+    return (
+      <div className="min-h-screen bg-[#fbfbf9]">
+        <EditorialLandingPage
+          onNavigate={setActiveTab}
+          walletConnected={walletConnected}
+          userAddress={userAddress}
+          onOpenWalletModal={() => setWalletModalOpen(true)}
+          userNightBalance={userNightBalance}
+          blockHeight={blockHeight}
+        />
+
+        <WalletModal
+          isOpen={walletModalOpen}
+          onClose={() => setWalletModalOpen(false)}
+          onConnect={handleConnectLace}
+          isConnecting={isConnectingLace}
+          errorMessage={laceError}
+          laceDetected={laceDetected}
+          onCheckDetection={checkLace}
+          connectedAddress={userAddress}
+          onDisconnect={handleDisconnectLace}
+        />
+
+        {toast && (
+          <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+            <div
+              className={`px-4 py-3 rounded-xl shadow-2xl border text-xs font-mono font-semibold flex items-center gap-2 ${
+                toast.type === 'success'
+                  ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
+                  : toast.type === 'error'
+                  ? 'bg-rose-950/90 text-rose-300 border-rose-500/40'
+                  : 'bg-cyan-950/90 text-cyan-300 border-cyan-500/40'
+              }`}
+            >
+              <span>{toast.type === 'success' ? '⚡' : toast.type === 'error' ? '⚠️' : 'ℹ️'}</span>
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {/* Header */}
@@ -172,12 +290,26 @@ export const App: React.FC = () => {
         setActiveTab={setActiveTab}
         blockHeight={blockHeight}
         walletConnected={walletConnected}
-        setWalletConnected={setWalletConnected}
+        userAddress={userAddress}
+        onOpenWalletModal={() => setWalletModalOpen(true)}
+        onDisconnectWallet={handleDisconnectLace}
         userNightBalance={userNightBalance}
         setUserNightBalance={setUserNightBalance}
         onAdvanceTime={handleAdvanceTime}
         onResetDemo={handleResetDemo}
         currentTimeStr={currentTimeStr}
+      />
+
+      <WalletModal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+        onConnect={handleConnectLace}
+        isConnecting={isConnectingLace}
+        errorMessage={laceError}
+        laceDetected={laceDetected}
+        onCheckDetection={checkLace}
+        connectedAddress={userAddress}
+        onDisconnect={handleDisconnectLace}
       />
 
       {/* Main Content Area */}
@@ -201,7 +333,7 @@ export const App: React.FC = () => {
             onRequestLoan={handleRequestLoan}
             userNightBalance={userNightBalance}
             currentCommitment={currentCommitment}
-            borrowerAddress={defaultBorrower}
+            borrowerAddress={userAddress || ''}
           />
         )}
 
