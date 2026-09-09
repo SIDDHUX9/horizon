@@ -1,0 +1,138 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.34.0",
+  "language-version": "0.26.0",
+  "runtime-version": "0.19.0",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 11513,
+      "hash": "35dbe1c3b6e4a5308a7c922ecb033a0d0e143b23d5a127689fe4c71e70b961fc"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 9057,
+      "hash": "bac57a74a02c49938fcde52b3ec72e301f8917f3d7c000ab7d84ca245be3a4ec"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 137859,
+      "hash": "4c7b99e9a4c566ad4e2e0947445784675f3fb4efacd55f930f0d80875cf557a2"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 6756,
+      "hash": "7fa2f40c39f268590e3d54603365894972306cbe9ecb202e35f6add164564998"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "createLendingPool.bzkir": {
+      "type": "file",
+      "size": 287,
+      "hash": "0a7feafb50c930313c418780136867065999fa6eff37b5bcef731c4726c59bef"
+    },
+    "createLendingPool.zkir": {
+      "type": "file",
+      "size": 4841,
+      "hash": "c83be819e95f52b1a08d3af06895f9c89a33c1d360f7ca70d3abe61cf2935b19"
+    },
+    "liquidate.bzkir": {
+      "type": "file",
+      "size": 640,
+      "hash": "d3febe641768f49d9811a390d2a93fef734948ec9abc77ed9e2b3e599c344ce1"
+    },
+    "liquidate.zkir": {
+      "type": "file",
+      "size": 12378,
+      "hash": "bdefffc1546beea8b2f3c83bfb816fb2819962e67ff9c8bc84c9b21cf15654d5"
+    },
+    "repayLoan.bzkir": {
+      "type": "file",
+      "size": 1704,
+      "hash": "2c3418cc66f1e068abd73df177b05f82d181cbae449f5d2ec00e9074a23d3417"
+    },
+    "repayLoan.zkir": {
+      "type": "file",
+      "size": 26509,
+      "hash": "d58c0656c9ed045092c4f03eab154062fcb6cb23c9b3dea1cbde7f40765af125"
+    },
+    "requestLoan.bzkir": {
+      "type": "file",
+      "size": 800,
+      "hash": "d63c8857500bcafd8c0fe36b3a33a1e46329a691792cf21c47fdac5ee127eb1d"
+    },
+    "requestLoan.zkir": {
+      "type": "file",
+      "size": 14390,
+      "hash": "76be04684910cc11623d0c880b32eed186cbba4964289e9fcc2fb300694816b2"
+    },
+    "submitFinancialSnapshot.bzkir": {
+      "type": "file",
+      "size": 169,
+      "hash": "879684e21050590c88c236d02d4c56d8396b97699c4f4e5f6fe1f04a7b64b362"
+    },
+    "submitFinancialSnapshot.zkir": {
+      "type": "file",
+      "size": 2796,
+      "hash": "4ed322120a340dcfb3355b3d3bd4a9c98e7f150ef168fbcf49afb1a59c75e1a3"
+    }
+  },
+  "keys": {
+    "type": "directory",
+    "createLendingPool.prover": {
+      "type": "file",
+      "size": 551708,
+      "hash": "f7e65602abb93b06c6f33b7157e13a56e90afc018de04bdbb62581361480f7ba"
+    },
+    "createLendingPool.verifier": {
+      "type": "file",
+      "size": 1351,
+      "hash": "cf36088ed7a89a3bddbb8dc8f9a748f4025829eca8b67cf91a1b04d04b5a9915"
+    },
+    "liquidate.prover": {
+      "type": "file",
+      "size": 287482,
+      "hash": "dad3397c4f9f7c5cfd71569cc393a656594064c117a63465b15a322d25365833"
+    },
+    "liquidate.verifier": {
+      "type": "file",
+      "size": 1351,
+      "hash": "04a97d97b7887f04bcacaa12b1560f6cfee36966500adc4143f9758f03367be3"
+    },
+    "repayLoan.prover": {
+      "type": "file",
+      "size": 553637,
+      "hash": "3a99fe6faade325ca40c18a3eb0c880ec9917c360c5b8db1ffa08e2bc1042489"
+    },
+    "repayLoan.verifier": {
+      "type": "file",
+      "size": 1351,
+      "hash": "de019e31718d44d39e7a8039f360aae16b8f089b3afdaf4ea0646e0eec87df1e"
+    },
+    "requestLoan.prover": {
+      "type": "file",
+      "size": 2825529,
+      "hash": "7abc02c22ad42cea3c112d17897c072eec8b06a0240272a3eb6456d71ba1c073"
+    },
+    "requestLoan.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "8065caee39a2bdbfc372095fcb14ed84f99418b955c887cf4fe204741b76a99b"
+    },
+    "submitFinancialSnapshot.prover": {
+      "type": "file",
+      "size": 2820646,
+      "hash": "90f939cb0d1707ef8c9ceb5da8a126ae68633d594d0ffa14cf20a30423318d62"
+    },
+    "submitFinancialSnapshot.verifier": {
+      "type": "file",
+      "size": 2119,
+      "hash": "7b2e83f5ea0a5ef1f89e09737a061ac7d81e9a31029129b50f3942d2a3b7f731"
+    }
+  }
+}
