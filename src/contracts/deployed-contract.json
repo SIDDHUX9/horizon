@@ -4,8 +4,8 @@
   "deployerAddress": "0x49ddbddb03adad8020a74024f51bca6beb13951e",
   "shieldedAddress": "0x4dd5bbcb5c9a0f5cfde6186456ec0b62b67ff155b63a7e8a",
   "contractCodeHash": "0xd71fb19791de3d5dbd68ce8c438b7e735704f865e8ac69514847094691089bb9",
-  "zkProofHash": "0x930ab57c0e90799b6d6e4ae9a0ff7650b80541d49969377b0ed1334dd321faa1",
-  "blockHeight": 805367,
+  "zkProofHash": "0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510",
+  "blockHeight": 807737,
   "blockHash": "0x7bb31c5698682ef215692f566996173774ba74bf759a3ac56b2ad6ab294b8fbd",
   "timestamp": "2026-09-10T14:16:22.093Z",
   "circuits": [
@@ -16,6 +16,6 @@
     "liquidate"
   ],
   "verifiedOnChain": true,
-  "explorerUrl": "https://preview.midnightexplorer.com/tx/0x930ab57c0e90799b6d6e4ae9a0ff7650b80541d49969377b0ed1334dd321faa1",
-  "contractExplorerUrl": "https://preview.midnightexplorer.com/search?q=0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962"
+  "explorerUrl": "https://preview.midnightexplorer.com/transactions/0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510",
+  "contractExplorerUrl": "https://preview.midnightexplorer.com/contracts"
 }

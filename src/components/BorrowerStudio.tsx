@@ -714,7 +714,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
                 <span className="text-[#11161a] font-bold break-all">{lastProofTrace.tx_hash}</span>
               </div>
               <a
-                href={`https://preview.midnightexplorer.com/tx/${lastProofTrace.tx_hash}`}
+                href={`https://preview.midnightexplorer.com/transactions/${lastProofTrace.tx_hash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs text-[#11161a] hover:underline flex items-center gap-1 font-sans shrink-0 font-semibold"

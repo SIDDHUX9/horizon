@@ -8,7 +8,10 @@ import {
   Coins, 
   Globe, 
   Lock, 
-  Layers 
+  Layers,
+  Cpu,
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 import type { DiscoveredWallet } from '../services/laceWallet';
 import { formatNight } from '../contracts/horizonSimulator';
@@ -76,7 +79,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           </div>
           <div>
             <h3 className="font-serif text-xl font-normal text-[#11161a]">
-              {connectedAddress ? 'Midnight Wallet Connected' : 'Midnight Lace Wallet Integration'}
+              {connectedAddress ? 'Midnight Wallet Connected' : 'Connect Midnight Wallet'}
             </h3>
             <p className="text-xs text-[#525f6c] font-sans">
               Official Midnight DApp Connector Protocol (CAIP-372)
@@ -119,7 +122,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                   <span>Network</span>
                 </div>
                 <div className="font-mono font-bold text-[#11161a]">
-                  {networkId || 'Midnight Testnet'}
+                  {networkId || 'Midnight Preview'}
                 </div>
               </div>
 
@@ -150,34 +153,35 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         ) : (
           /* Disconnected State */
           <div className="space-y-4">
-            {hasWallets ? (
-              <div className="space-y-3">
-                {/* Network Selector */}
-                <div className="p-4 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5] space-y-2">
-                  <div className="flex items-center justify-between text-[11px] text-[#525f6c]">
-                    <span>Midnight Target Network</span>
-                    <span className="text-[#11161a] font-mono font-semibold uppercase">{selectedNetwork} (active)</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(['preview', 'preprod', 'undeployed', 'mainnet'] as const).map((net) => (
-                      <button
-                        key={net}
-                        type="button"
-                        onClick={() => onSelectNetwork(net)}
-                        className={`py-1.5 px-2 rounded-xl text-xs font-mono transition-all border text-center ${
-                          selectedNetwork === net
-                            ? 'bg-[#11161a] border-[#11161a] text-white font-bold shadow-xs'
-                            : 'bg-white border-[#d5d5cf] text-[#525f6c] hover:text-[#11161a] hover:bg-[#f5f5f0]'
-                        }`}
-                      >
-                        {net}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Network Selector */}
+            <div className="p-4 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5] space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-[#525f6c]">
+                <span>Midnight Target Network</span>
+                <span className="text-[#11161a] font-mono font-semibold uppercase">{selectedNetwork} (active)</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['preview', 'preprod', 'undeployed', 'mainnet'] as const).map((net) => (
+                  <button
+                    key={net}
+                    type="button"
+                    onClick={() => onSelectNetwork(net)}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-mono transition-all border text-center ${
+                      selectedNetwork === net
+                        ? 'bg-[#11161a] border-[#11161a] text-white font-bold shadow-xs'
+                        : 'bg-white border-[#d5d5cf] text-[#525f6c] hover:text-[#11161a] hover:bg-[#f5f5f0]'
+                    }`}
+                  >
+                    {net}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                <div className="text-xs text-[#525f6c] font-medium pt-1">
-                  Detected Midnight DApp Connector Wallets in <code className="text-[#11161a] font-mono font-semibold">window.midnight</code>:
+            {/* Detected Injected Browser Wallets (Lace) */}
+            {hasWallets ? (
+              <div className="space-y-2.5 pt-2">
+                <div className="text-xs text-[#525f6c] font-medium">
+                  Detected Midnight DApp Connector Wallets (<code className="text-[#11161a] font-mono font-semibold">window.midnight</code>):
                 </div>
 
                 {discoveredWallets.map((wallet) => (
@@ -204,48 +208,39 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                     <button
                       onClick={() => onConnect(wallet.id)}
                       disabled={isConnecting}
-                      className="px-4 py-2 rounded-full bg-[#11161a] hover:bg-black text-white text-xs font-semibold transition active:scale-95 disabled:opacity-50 shadow-sm"
+                      className="px-5 py-2 rounded-full bg-[#11161a] hover:bg-black text-white text-xs font-semibold transition active:scale-95 disabled:opacity-50 shadow-xs"
                     >
-                      {isConnecting ? 'Connecting...' : 'Connect →'}
+                      {isConnecting ? 'Connecting / Unlock Lace...' : 'Connect Lace →'}
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
-                  <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                    <ShieldAlert className="w-4 h-4 text-amber-700" />
-                    <span>No Midnight Wallets Injected</span>
-                  </div>
-                  <p className="leading-relaxed">
-                    Horizon uses the standardized <strong className="text-[#11161a]">@midnight-ntwrk/dapp-connector-api</strong> to discover and connect with Midnight Lace.
-                  </p>
-                  <p className="leading-relaxed text-amber-800">
-                    No active wallet was found on <code className="text-[#11161a] font-mono font-semibold">window.midnight</code>. Please ensure the official Midnight Lace Wallet extension is installed and enabled for this page.
-                  </p>
-                  <p className="text-[11px] text-amber-700 font-mono pt-1">
-                    Strict Policy: Zero fallback or simulated placeholder addresses are committed.
-                  </p>
+              <div className="p-4 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5] text-xs text-[#525f6c] space-y-2">
+                <div className="font-semibold text-[#11161a] flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#707e8c]" />
+                  <span>Browser Extension Detection</span>
                 </div>
-
-                <div className="flex gap-2">
+                <p className="text-[11px] leading-relaxed">
+                  Install the Midnight Lace Extension in Chrome/Brave/Edge to connect your real on-chain Midnight account.
+                </p>
+                <div className="flex gap-2 pt-1">
                   <a
                     href="https://docs.midnight.network/develop/tutorial/building/prereqs#install-lace"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex-1 py-2.5 rounded-full border border-[#d5d5cf] bg-white hover:bg-[#f5f5f0] text-[#11161a] text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-xs"
+                    className="flex-1 py-1.5 rounded-full border border-[#d5d5cf] bg-white hover:bg-[#f5f5f0] text-[#11161a] text-[11px] font-semibold flex items-center justify-center gap-1.5 transition shadow-xs"
                   >
-                    <span>Lace Setup Guide</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Lace Docs</span>
+                    <ExternalLink className="w-3 h-3" />
                   </a>
 
                   <button
                     onClick={onCheckDetection}
-                    className="px-4 py-2.5 rounded-full bg-[#11161a] hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+                    className="px-3 py-1.5 rounded-full bg-white hover:bg-[#f5f5f0] border border-[#d5d5cf] text-[#525f6c] hover:text-[#11161a] text-[11px] font-semibold flex items-center gap-1 transition shadow-xs"
                     title="Re-scan window.midnight"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className="w-3 h-3" />
                     <span>Re-scan</span>
                   </button>
                 </div>
@@ -254,8 +249,16 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 leading-relaxed font-mono">
-                {errorMessage}
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed font-sans flex items-start gap-3 shadow-xs">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-semibold text-amber-950">{errorMessage}</div>
+                  {errorMessage.toLowerCase().includes('locked') && (
+                    <div className="text-[11px] text-amber-800">
+                      Click the Midnight Lace extension icon in your browser toolbar, enter your password to unlock it, then click <strong>Connect Lace →</strong>.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

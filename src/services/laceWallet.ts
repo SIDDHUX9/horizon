@@ -102,10 +102,14 @@ export async function connectLaceWallet(
       throw new Error(`Injected wallet '${targetWallet.name}' has no connect() or enable() method.`);
     }
   } catch (err: any) {
-    if (err.message && err.message.toLowerCase().includes('reject')) {
+    const msg = err?.message || '';
+    if (msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('decline')) {
       throw new Error('Connection request was declined in Midnight Lace wallet.');
     }
-    throw new Error(err.message || 'Failed to authenticate with Midnight Lace wallet.');
+    if (msg.toLowerCase().includes('locked') || msg.toLowerCase().includes('unlock')) {
+      throw new Error('Wallet is locked. Please unlock the Midnight Lace extension in your browser toolbar, then click Connect.');
+    }
+    throw new Error(msg || 'Failed to authenticate with Midnight Lace wallet.');
   }
 
   // Hint methods to wallet for permissions

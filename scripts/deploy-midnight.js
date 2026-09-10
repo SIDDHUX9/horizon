@@ -225,8 +225,8 @@ async function main() {
       'liquidate'
     ],
     verifiedOnChain: true,
-    explorerUrl: `https://preview.midnightexplorer.com/tx/0x${realProofHash}`,
-    contractExplorerUrl: `https://preview.midnightexplorer.com/search?q=${contractAddress}`
+    explorerUrl: `https://preview.midnightexplorer.com/transactions/0x${realProofHash}`,
+    contractExplorerUrl: `https://preview.midnightexplorer.com/contracts`
   };
 
   fs.writeFileSync(DEPLOYED_CONFIG_PATH, JSON.stringify(deploymentData, null, 2));

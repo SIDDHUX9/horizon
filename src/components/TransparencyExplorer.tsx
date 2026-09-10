@@ -107,7 +107,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
             <span className="text-[#11161a] font-bold break-all">0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962</span>
           </div>
           <a
-            href="https://preview.midnightexplorer.com/search?q=0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962"
+            href="https://preview.midnightexplorer.com/contracts"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[#11161a] hover:opacity-75 font-sans font-semibold transition underline shrink-0"
@@ -420,14 +420,20 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#eaeae5] pb-3 font-mono text-xs">
                   <div className="flex items-center gap-2.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <a
+                      href={`https://preview.midnightexplorer.com/blocks/${tx.block_height}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition"
+                      title="Inspect block on Midnight Preview Explorer"
+                    >
                       Block #{tx.block_height}
-                    </span>
+                    </a>
                     <span className="text-[#11161a] font-bold">Circuit: {tx.circuit}()</span>
                   </div>
                   <div className="text-[#525f6c] text-[11px]">
                     <a
-                      href={`https://preview.midnightexplorer.com/tx/${tx.tx_hash}`}
+                      href={`https://preview.midnightexplorer.com/transactions/${tx.tx_hash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-[#11161a] hover:opacity-75 font-mono transition group"

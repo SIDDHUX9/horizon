@@ -51,10 +51,10 @@ Horizon is deployed and operating live on the **Midnight Preview Testnet**:
 | Parameter | Live Value |
 | :--- | :--- |
 | **Network** | `Midnight Preview` (Substrate v2) |
-| **Block Height** | `#805,390+` |
-| **Deployed Contract Address** | [`0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962`](https://preview.midnightexplorer.com/search?q=0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962) |
+| **Block Height** | `#807,850+` |
+| **Deployed Contract Address** | [`0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962`](https://preview.midnightexplorer.com/contracts) |
 | **Contract Code Hash** | `0xd71fb19791de3d5dbd68ce8c438b7e735704f865e8ac69514847094691089bb9` |
-| **Real ZK Proof Hash** | [`0x930ab57c0e90799b6d6e4ae9a0ff7650b80541d49969377b0ed1334dd321faa1`](https://preview.midnightexplorer.com/tx/0x930ab57c0e90799b6d6e4ae9a0ff7650b80541d49969377b0ed1334dd321faa1) |
+| **Real ZK Proof Hash** | [`0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510`](https://preview.midnightexplorer.com/transactions/0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510) |
 | **Live Explorer REST API** | `https://preview-service-v2-01.midnightexplorer.com/api/v1` |
 | **Local Proof Server** | `http://127.0.0.1:6300` (`ghcr.io/midnight-ntwrk/proof-server:latest`) |
 

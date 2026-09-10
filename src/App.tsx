@@ -152,7 +152,7 @@ export const App: React.FC = () => {
     setWalletConnected(false);
     setUserNightBalance(0n);
     setWalletModalOpen(false);
-    showToast('Lace wallet disconnected.', 'info');
+    showToast('Wallet disconnected.', 'info');
   };
 
   const refreshState = () => {

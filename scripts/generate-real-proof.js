@@ -140,7 +140,7 @@ async function run() {
   console.log(`🔐 Circuit:                  requestLoan(income >= floor, DTI <= max, CR >= min)`);
   console.log(`🔑 Cryptographic Proof Hash:  0x${txHash}`);
   console.log(`🛡️  Zero-Knowledge Guarantee: Raw financial numbers never left client memory`);
-  console.log(`📡 Explorer URL:             https://preview.midnightexplorer.com/tx/0x${txHash}`);
+  console.log(`📡 Explorer URL:             https://preview.midnightexplorer.com/transactions/0x${txHash}`);
   console.log('====================================================================\n');
 }
 

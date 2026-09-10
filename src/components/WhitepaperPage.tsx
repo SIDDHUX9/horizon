@@ -159,12 +159,17 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
               <span className="text-emerald-600 font-bold">●</span>
               <span>Network: Midnight Preview</span>
             </div>
-            <div className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b]">
+            <a
+              href={`https://preview.midnightexplorer.com/blocks/${blockHeight}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b] hover:border-[#11161a] transition-colors"
+            >
               <Clock className="w-3.5 h-3.5 text-cyan-600" />
               <span>Block #{blockHeight}</span>
-            </div>
+            </a>
             <a
-              href={`https://preview.midnightexplorer.com/search?q=${contractAddress}`}
+              href="https://preview.midnightexplorer.com/contracts"
               target="_blank"
               rel="noreferrer"
               className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#11161a] hover:border-[#11161a] transition-colors"
@@ -482,7 +487,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
                 <span className="text-[#707e8c]">Deployed Contract:</span>
                 <a
-                  href={`https://preview.midnightexplorer.com/search?q=${contractAddress}`}
+                  href="https://preview.midnightexplorer.com/contracts"
                   target="_blank"
                   rel="noreferrer"
                   className="text-cyan-700 hover:underline break-all"
@@ -493,7 +498,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
                 <span className="text-[#707e8c]">Proof Verification Hash:</span>
                 <a
-                  href={`https://preview.midnightexplorer.com/tx/${zkProofHash}`}
+                  href={`https://preview.midnightexplorer.com/transactions/${zkProofHash}`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-emerald-700 hover:underline break-all"

@@ -165,7 +165,7 @@ async function run() {
   console.log(`   Block Height:     #${tx1.block_height}`);
   console.log(`   Pool ID:          ${pool.pool_id}`);
   console.log(`   Deposited TVL:    ${formatNight(pool.total_deposited)}`);
-  console.log(`   Explorer URL:     https://preview.midnightexplorer.com/tx/${tx1.tx_hash}\n`);
+  console.log(`   Explorer URL:     https://preview.midnightexplorer.com/transactions/${tx1.tx_hash}\n`);
 
   // ----------------------------------------------------------------------------
   // STAGE 2: Borrower Submits Financial Snapshot (submitFinancialSnapshot)
@@ -212,7 +212,7 @@ async function run() {
   console.log(`   Block Height:        #${tx2.block_height}`);
   console.log(`   Commitment Digest:   ${snapshotCommitment}`);
   console.log(`   Data Leakage Audit:  0 BYTES OF INCOME/DEBT/SALT TRANSMITTED (100% PRIVATE)`);
-  console.log(`   Explorer URL:        https://preview.midnightexplorer.com/tx/${tx2.tx_hash}\n`);
+  console.log(`   Explorer URL:        https://preview.midnightexplorer.com/transactions/${tx2.tx_hash}\n`);
 
   // ----------------------------------------------------------------------------
   // STAGE 3: Borrower Requests Loan & Evaluates ZK Proof (requestLoan)
@@ -287,7 +287,7 @@ async function run() {
   console.log(`   Block Height:        #${tx3.block_height}`);
   console.log(`   Disbursed Loan:      ${formatNight(requestedAmount)} to ${borrowerAddress}`);
   console.log(`   Collateral Locked:   ${formatNight(collateralDeposit)} (150% Overcollateralized)`);
-  console.log(`   Explorer URL:        https://preview.midnightexplorer.com/tx/${tx3.tx_hash}\n`);
+  console.log(`   Explorer URL:        https://preview.midnightexplorer.com/transactions/${tx3.tx_hash}\n`);
 
   // ----------------------------------------------------------------------------
   // STAGE 4: Borrower Repays Loan & Unlocks Collateral (repayLoan)
@@ -344,7 +344,7 @@ async function run() {
   console.log(`   Interest Earned:     1,300 NIGHT`);
   console.log(`   Collateral Released: ${formatNight(collateralDeposit)} returned to borrower`);
   console.log(`   Loan Status:         REPAID (FINAL)`);
-  console.log(`   Explorer URL:        https://preview.midnightexplorer.com/tx/${tx4.tx_hash}\n`);
+  console.log(`   Explorer URL:        https://preview.midnightexplorer.com/transactions/${tx4.tx_hash}\n`);
 
   // ----------------------------------------------------------------------------
   // LIFECYCLE SUMMARY REPORT
