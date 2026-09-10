@@ -60,17 +60,17 @@ export const LenderHub: React.FC<LenderHubProps> = ({
         max_debt_to_income_bps: Math.round(parseFloat(maxDti) * 100),
         min_collateral_ratio_bps: Math.round(parseFloat(minCollateralRatio) * 100),
         interest_rate_bps: Math.round(parseFloat(interestRate) * 100),
-        term_duration: BigInt(parseInt(termDays)) * 86400n,
+        term_duration: BigInt(termDays) * 86400n,
       });
       setShowModal(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to create lending pool');
+      setError(err.message || 'Failed to deploy lending pool');
     } finally {
       setLoading(false);
     }
   };
 
-  // Compute real on-chain aggregate statistics (nothing hardcoded)
+  // Aggregate Metrics
   const totalDeposited = pools.reduce((acc, p) => acc + p.total_deposited, 0n);
   const totalLiquidity = pools.reduce((acc, p) => acc + p.pool_liquidity, 0n);
   const totalLent = pools.reduce((acc, p) => acc + p.total_lent, 0n);
@@ -95,271 +95,282 @@ export const LenderHub: React.FC<LenderHubProps> = ({
       : 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-6 sm:p-8 border-cyan-500/20">
-        <div>
-          <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Coins className="w-4 h-4" />
+      <div className="p-8 sm:p-10 rounded-3xl bg-white border border-[#eaeae5] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden">
+        {/* Background Theme Banner */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-multiply pointer-events-none"
+          style={{ backgroundImage: "url('/app-banner.jpg')", backgroundPosition: 'center 35%' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/30 pointer-events-none" />
+
+        <div className="space-y-2 max-w-2xl relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f0] border border-[#d5d5cf] text-xs font-semibold text-[#525f6c]">
+            <Coins className="w-3.5 h-3.5 text-[#11161a]" />
             <span>Liquidity Provider Portal</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white">Lender Capital Pools</h2>
-          <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-xl">
-            Deposit NIGHT liquidity into public escrow pools. Define custom risk underwriting parameters—borrowers will prove compliance in ZK without ever exposing their confidential income or debt.
+          <h1 className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-[#11161a]">
+            Lender Capital Pools
+          </h1>
+          <p className="text-sm sm:text-base text-[#525f6c] leading-relaxed">
+            Deposit NIGHT into autonomous liquidity pools. Set public risk criteria—income floors, DTI ceilings, and collateral requirements. Borrowers prove qualification in ZK without ever exposing their confidential figures.
           </p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="btn-primary shrink-0 text-sm !py-3 !px-5"
+          className="shrink-0 bg-[#11161a] hover:bg-black text-white font-semibold text-sm px-6 py-3.5 rounded-full transition shadow-sm hover:shadow active:scale-95 flex items-center gap-2"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Deploy New Lending Pool</span>
+          <span>Deploy Lending Pool</span>
         </button>
       </div>
 
       {/* Aggregate On-Chain Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="p-4 rounded-xl glass-panel border-cyan-500/30 bg-slate-900/60 flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Protocol TVL</div>
-          <div className="text-lg sm:text-xl font-bold font-mono text-white mt-1">
+        <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Protocol TVL</div>
+          <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {formatNight(totalDeposited)}
           </div>
-          <div className="text-[10px] text-cyan-400 font-mono mt-0.5">Real Contract State</div>
+          <div className="text-[10px] text-emerald-700 font-mono mt-1">Real Contract State</div>
         </div>
 
-        <div className="p-4 rounded-xl glass-panel border-emerald-500/30 bg-slate-900/60 flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Available Liquidity</div>
-          <div className="text-lg sm:text-xl font-bold font-mono text-emerald-400 mt-1">
+        <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Available Liquidity</div>
+          <div className="text-xl font-bold font-mono text-emerald-700 mt-2">
             {formatNight(totalLiquidity)}
           </div>
-          <div className="text-[10px] text-emerald-400/80 font-mono mt-0.5">Ready for Borrowers</div>
+          <div className="text-[10px] text-emerald-700 font-mono mt-1">Ready for Borrowers</div>
         </div>
 
-        <div className="p-4 rounded-xl glass-panel border-purple-500/30 bg-slate-900/60 flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Active Capital Lent</div>
-          <div className="text-lg sm:text-xl font-bold font-mono text-purple-300 mt-1">
+        <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Active Capital Lent</div>
+          <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {formatNight(totalLent)}
           </div>
-          <div className="text-[10px] text-purple-400/80 font-mono mt-0.5">Secured by ZK Proofs</div>
+          <div className="text-[10px] text-[#707e8c] font-mono mt-1">Secured by ZK Proofs</div>
         </div>
 
-        <div className="p-4 rounded-xl glass-panel border-blue-500/30 bg-slate-900/60 flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Active Pools</div>
-          <div className="text-lg sm:text-xl font-bold font-mono text-cyan-300 mt-1">
+        <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Active Pools</div>
+          <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {poolCount} {poolCount === 1 ? 'Pool' : 'Pools'}
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">On Midnight Ledger</div>
+          <div className="text-[10px] text-[#707e8c] font-mono mt-1">On Midnight Ledger</div>
         </div>
 
-        <div className="p-4 rounded-xl glass-panel border-amber-500/30 bg-slate-900/60 flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Weighted APR</div>
-          <div className="text-lg sm:text-xl font-bold font-mono text-amber-400 mt-1">
+        <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Weighted APR</div>
+          <div className="text-xl font-bold font-mono text-amber-700 mt-2">
             {formatBps(weightedAprBps)}
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Weighted by Liquidity</div>
+          <div className="text-[10px] text-[#707e8c] font-mono mt-1">Volume Weighted</div>
         </div>
 
-        <div className="p-4 rounded-xl glass-panel border-indigo-500/30 bg-slate-900/60 flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Pool Utilization</div>
-          <div className="text-lg sm:text-xl font-bold font-mono text-indigo-300 mt-1">
+        <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Pool Utilization</div>
+          <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {overallUtilization.toFixed(1)}%
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Min CR: {formatBps(avgMinCollateralBps)}</div>
+          <div className="text-[10px] text-[#707e8c] font-mono mt-1">Min CR: {formatBps(avgMinCollateralBps)}</div>
         </div>
       </div>
 
       {/* Pools Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <Layers className="w-4 h-4 text-cyan-400" />
-            <span>Active Public Lending Pools ({pools.length})</span>
+          <h3 className="font-serif text-2xl font-normal text-[#11161a] flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#11161a]" />
+            <span>Active Lending Pools ({pools.length})</span>
           </h3>
-          <span className="text-xs text-[var(--text-muted)] font-mono">
-            Powered by Midnight Compact Circuit <code>createLendingPool()</code>
+          <span className="text-xs text-[#707e8c] font-mono">
+            Powered by Compact Circuit <code>createLendingPool()</code>
           </span>
         </div>
 
         {pools.length === 0 ? (
-          <div className="glass-panel p-12 text-center text-slate-400 space-y-3">
-            <Coins className="w-10 h-10 text-cyan-400/50 mx-auto" />
-            <h4 className="text-base font-bold text-white">No Lending Pools Deployed Yet</h4>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Be the first liquidity provider to deploy a lending pool on Midnight. Define custom income floors, DTI ceilings, and collateral terms.
+          <div className="p-12 rounded-3xl bg-white border border-[#eaeae5] text-center text-[#525f6c] space-y-3">
+            <Coins className="w-10 h-10 text-[#9ca3af] mx-auto" />
+            <h4 className="text-base font-bold text-[#11161a]">No Lending Pools Deployed Yet</h4>
+            <p className="text-xs text-[#525f6c] max-w-md mx-auto">
+              Be the first liquidity provider to deploy an autonomous lending facility on Midnight Preview.
             </p>
             <button
               onClick={() => setShowModal(true)}
-              className="btn-primary text-xs !py-2.5 !px-4 mx-auto"
+              className="bg-[#11161a] hover:bg-black text-white text-xs font-semibold px-5 py-2.5 rounded-full shadow-sm mx-auto"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Deploy First Lending Pool</span>
+              Deploy First Lending Pool
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {pools.map((pool) => {
-            const utilization =
-              pool.total_deposited > 0n
-                ? Number((pool.total_lent * 10000n) / pool.total_deposited) / 100
-                : 0;
+            {pools.map((pool) => {
+              const utilization =
+                pool.total_deposited > 0n
+                  ? Number((pool.total_lent * 10000n) / pool.total_deposited) / 100
+                  : 0;
 
-            return (
-              <div
-                key={pool.pool_id}
-                className="glass-panel p-6 space-y-6 hover:border-cyan-500/40 transition flex flex-col justify-between"
-              >
-                <div className="space-y-4">
-                  {/* Pool Header */}
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-4">
-                    <div>
-                      <div className="text-xs font-mono text-cyan-400">
-                        Pool ID: {pool.pool_id.slice(0, 14)}...{pool.pool_id.slice(-6)}
+              return (
+                <div
+                  key={pool.pool_id}
+                  className="p-6 sm:p-8 rounded-3xl bg-white border border-[#eaeae5] space-y-6 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                >
+                  <div className="space-y-4">
+                    {/* Pool Header */}
+                    <div className="flex items-start justify-between gap-2 border-b border-[#eaeae5] pb-4">
+                      <div>
+                        <div className="text-xs font-mono text-[#11161a] font-bold">
+                          Pool {pool.pool_id.slice(0, 14)}...{pool.pool_id.slice(-6)}
+                        </div>
+                        <div className="text-xs text-[#707e8c] font-mono mt-0.5">
+                          Lender: {pool.lender.slice(0, 10)}...
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-400 font-mono mt-0.5">
-                        Lender: {pool.lender.slice(0, 10)}...
+                      <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                        {formatBps(pool.interest_rate_bps)} Fixed APR
+                      </span>
+                    </div>
+
+                    {/* Liquidity Meters */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3.5 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5]">
+                        <div className="text-[11px] text-[#707e8c] uppercase font-semibold">Available Liquidity</div>
+                        <div className="text-lg font-bold text-[#11161a] font-mono mt-0.5">
+                          {formatNight(pool.pool_liquidity)}
+                        </div>
+                      </div>
+                      <div className="p-3.5 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5]">
+                        <div className="text-[11px] text-[#707e8c] uppercase font-semibold">Total Lent Out</div>
+                        <div className="text-lg font-bold text-[#11161a] font-mono mt-0.5">
+                          {formatNight(pool.total_lent)}
+                        </div>
                       </div>
                     </div>
-                    <span className="badge badge-active text-[10px]">
-                      {formatBps(pool.interest_rate_bps)} Fixed APR
-                    </span>
+
+                    {/* Underwriting Criteria (The ZK Constraints) */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-[#11161a] uppercase tracking-wider">
+                        Public Underwriting Thresholds (ZK Constraints):
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs font-mono">
+                        <div className="p-2.5 rounded-xl bg-[#f5f5f0] border border-[#eaeae5]">
+                          <span className="text-[#707e8c] block text-[10px]">Min Income</span>
+                          <span className="text-[#11161a] font-bold">
+                            ${Number(pool.min_income).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#f5f5f0] border border-[#eaeae5]">
+                          <span className="text-[#707e8c] block text-[10px]">Max DTI</span>
+                          <span className="text-[#11161a] font-bold">
+                            {formatBps(pool.max_debt_to_income_bps)}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#f5f5f0] border border-[#eaeae5]">
+                          <span className="text-[#707e8c] block text-[10px]">Min Collateral</span>
+                          <span className="text-[#11161a] font-bold">
+                            {formatBps(pool.min_collateral_ratio_bps)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Utilization Bar */}
+                    <div className="space-y-1.5 font-mono text-xs">
+                      <div className="flex justify-between text-[11px] text-[#707e8c]">
+                        <span>Utilization</span>
+                        <span>{utilization.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-[#f0f0eb] rounded-full h-2 overflow-hidden border border-[#eaeae5]">
+                        <div
+                          className="bg-[#11161a] h-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, utilization)}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Liquidity Meters */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <div className="text-[11px] text-slate-400 uppercase font-semibold">Available Liquidity</div>
-                      <div className="text-lg font-bold text-white font-mono mt-0.5">
-                        {formatNight(pool.pool_liquidity)}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <div className="text-[11px] text-slate-400 uppercase font-semibold">Total Lent Out</div>
-                      <div className="text-lg font-bold text-cyan-300 font-mono mt-0.5">
-                        {formatNight(pool.total_lent)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Underwriting Criteria (The ZK Constraints) */}
-                  <div className="space-y-2">
-                    <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                      Public Underwriting Criteria (ZK Constraints):
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs font-mono">
-                      <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/80">
-                        <div className="text-[10px] text-slate-500">Min Income Floor</div>
-                        <div className="text-emerald-400 font-bold">${Number(pool.min_income).toLocaleString()}</div>
-                      </div>
-                      <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/80">
-                        <div className="text-[10px] text-slate-500">Max DTI Ceiling</div>
-                        <div className="text-amber-400 font-bold">{formatBps(pool.max_debt_to_income_bps)}</div>
-                      </div>
-                      <div className="p-2 rounded-lg bg-slate-950/40 border border-slate-800/80">
-                        <div className="text-[10px] text-slate-500">Min Collateral</div>
-                        <div className="text-purple-400 font-bold">{formatBps(pool.min_collateral_ratio_bps)}</div>
-                      </div>
-                    </div>
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5 pt-1">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Term Duration: {Math.floor(Number(pool.term_duration) / 86400)} Days</span>
-                    </div>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => onSelectPoolForBorrow(pool.pool_id)}
+                      className="w-full py-3 rounded-full bg-[#11161a] hover:bg-black text-white font-semibold text-xs flex items-center justify-center gap-2 transition shadow-sm active:scale-95"
+                    >
+                      <span>Borrow from this pool</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-
-                {/* Card Footer Action */}
-                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-                  <div className="text-xs text-slate-400 font-mono">
-                    Pool Utilization: <span className="text-white font-bold">{utilization.toFixed(1)}%</span>
-                  </div>
-                  <button
-                    onClick={() => onSelectPoolForBorrow(pool.pool_id)}
-                    className="btn-secondary text-xs !py-2 !px-3 hover:border-cyan-400"
-                  >
-                    <span>Borrow Against Pool</span>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Modal for Creating New Lending Pool */}
+      {/* Modal: Deploy Lending Pool */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="glass-panel p-6 sm:p-8 max-w-lg w-full space-y-6 border-cyan-500/40 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                  <Coins className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Deploy Lending Pool</h3>
-                  <p className="text-xs text-slate-400">Calls <code>createLendingPool()</code> on Midnight</p>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="p-8 rounded-3xl bg-white border border-[#eaeae5] max-w-xl w-full space-y-6 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-[#eaeae5] pb-4">
+              <div>
+                <h3 className="text-xl font-serif text-[#11161a]">Deploy New Lending Pool</h3>
+                <p className="text-xs text-[#525f6c]">Deposit NIGHT and configure risk underwriting rules</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white transition text-lg"
+                className="p-1.5 rounded-lg hover:bg-[#f5f5f0] text-[#707e8c] hover:text-[#11161a] transition"
               >
                 ✕
               </button>
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                ⚠️ {error}
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  NIGHT Liquidity to Deposit
+                <label className="font-semibold text-[#11161a] block mb-1">
+                  Liquidity Deposit (NIGHT)
                 </label>
                 <input
                   type="number"
-                  min="1"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
-                  className="input-field font-mono"
-                  placeholder="e.g. 100000"
+                  className="w-full bg-[#f8f8f6] border border-[#d5d5cf] focus:border-[#11161a] text-[#11161a] font-mono text-sm rounded-xl px-4 py-2.5 outline-none"
+                  placeholder="100000"
                   required
                 />
-                <span className="text-[11px] text-slate-400">Available: {formatNight(userNightBalance)}</span>
+                <span className="text-[10px] text-[#707e8c] mt-1 block">Balance: {formatNight(userNightBalance)}</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Min Income Floor ($ USD)
+                  <label className="font-semibold text-[#11161a] block mb-1">
+                    Min Borrower Income ($ USD)
                   </label>
                   <input
                     type="number"
-                    min="1"
                     value={minIncome}
                     onChange={(e) => setMinIncome(e.target.value)}
-                    className="input-field font-mono"
-                    placeholder="e.g. 50000"
+                    className="w-full bg-[#f8f8f6] border border-[#d5d5cf] focus:border-[#11161a] text-[#11161a] font-mono text-sm rounded-xl px-4 py-2.5 outline-none"
+                    placeholder="60000"
                     required
                   />
                 </div>
+
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Max DTI Ratio (%)
+                  <label className="font-semibold text-[#11161a] block mb-1">
+                    Max Debt-to-Income (DTI %)
                   </label>
                   <input
                     type="number"
-                    step="0.5"
-                    min="1"
-                    max="100"
                     value={maxDti}
                     onChange={(e) => setMaxDti(e.target.value)}
-                    className="input-field font-mono"
-                    placeholder="e.g. 40"
+                    className="w-full bg-[#f8f8f6] border border-[#d5d5cf] focus:border-[#11161a] text-[#11161a] font-mono text-sm rounded-xl px-4 py-2.5 outline-none"
+                    placeholder="35"
                     required
                   />
                 </div>
@@ -367,73 +378,63 @@ export const LenderHub: React.FC<LenderHubProps> = ({
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Min Collateral (%)
+                  <label className="font-semibold text-[#11161a] block mb-1">
+                    Min Collateral Ratio (%)
                   </label>
                   <input
                     type="number"
-                    min="100"
                     value={minCollateralRatio}
                     onChange={(e) => setMinCollateralRatio(e.target.value)}
-                    className="input-field font-mono"
-                    placeholder="e.g. 150"
+                    className="w-full bg-[#f8f8f6] border border-[#d5d5cf] focus:border-[#11161a] text-[#11161a] font-mono text-sm rounded-xl px-4 py-2.5 outline-none"
+                    placeholder="150"
                     required
                   />
                 </div>
+
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Interest Rate (%)
+                  <label className="font-semibold text-[#11161a] block mb-1">
+                    Interest Rate (APR %)
                   </label>
                   <input
                     type="number"
                     step="0.1"
                     value={interestRate}
                     onChange={(e) => setInterestRate(e.target.value)}
-                    className="input-field font-mono"
-                    placeholder="e.g. 5.5"
+                    className="w-full bg-[#f8f8f6] border border-[#d5d5cf] focus:border-[#11161a] text-[#11161a] font-mono text-sm rounded-xl px-4 py-2.5 outline-none"
+                    placeholder="6.0"
                     required
                   />
                 </div>
+
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Term (Days)
+                  <label className="font-semibold text-[#11161a] block mb-1">
+                    Loan Term (Days)
                   </label>
                   <input
                     type="number"
-                    min="1"
                     value={termDays}
                     onChange={(e) => setTermDays(e.target.value)}
-                    className="input-field font-mono"
-                    placeholder="e.g. 30"
+                    className="w-full bg-[#f8f8f6] border border-[#d5d5cf] focus:border-[#11161a] text-[#11161a] font-mono text-sm rounded-xl px-4 py-2.5 outline-none"
+                    placeholder="30"
                     required
                   />
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Automatic Midnight ZK Verification:</span>
-                </div>
-                <p>
-                  Borrowers applying to this pool must submit a ZK proof satisfying all 3 inequalities (Income ≥ floor, DTI ≤ ceiling, Collateral Ratio ≥ floor).
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="pt-4 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn-secondary text-xs"
+                  className="px-5 py-2.5 rounded-full border border-[#d5d5cf] text-[#525f6c] hover:text-[#11161a] font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-primary text-xs"
+                  className="bg-[#11161a] hover:bg-black text-white px-6 py-2.5 rounded-full font-semibold shadow-sm active:scale-95 disabled:opacity-50"
                 >
-                  {loading ? 'Submitting to Midnight...' : 'Confirm Pool Deployment'}
+                  {loading ? 'Deploying on Midnight...' : 'Deploy Lending Pool'}
                 </button>
               </div>
             </form>

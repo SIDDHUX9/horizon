@@ -1,29 +1,28 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   ShieldCheck, 
   Wallet, 
   Clock, 
-  RefreshCw, 
-  FastForward, 
-  ChevronRight, 
   Coins, 
   ExternalLink,
   Layers,
   FileCode2,
-  Lock
+  Lock,
+  BookOpen
 } from 'lucide-react';
 import { formatNight } from '../contracts/horizonSimulator';
+import { ProtocolRoute } from '../services/router';
 
 interface HeaderProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: ProtocolRoute | string) => void;
   blockHeight: number;
   walletConnected: boolean;
   userAddress: string | null;
   onOpenWalletModal: () => void;
   onDisconnectWallet: () => void;
   userNightBalance: bigint;
-  setUserNightBalance: React.Dispatch<React.SetStateAction<bigint>>;
+  setUserNightBalance?: React.Dispatch<React.SetStateAction<bigint>>;
   onAdvanceTime: (days: number) => void;
   onResetDemo: () => void;
   currentTimeStr: string;
@@ -38,103 +37,67 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenWalletModal,
   onDisconnectWallet,
   userNightBalance,
-  setUserNightBalance,
   onAdvanceTime,
   onResetDemo,
   currentTimeStr,
 }) => {
-  const [faucetLoading, setFaucetLoading] = useState(false);
-
-  const handleFaucet = () => {
-    setFaucetLoading(true);
-    setTimeout(() => {
-      setUserNightBalance((prev) => prev + 50000n);
-      setFaucetLoading(false);
-    }, 600);
-  };
-
   const navItems = [
-    { id: 'landing', label: 'Editorial Home', icon: Layers },
-    { id: 'lender', label: 'Lender Hub', icon: Coins },
-    { id: 'borrower', label: 'Borrower ZK Studio', icon: Lock },
-    { id: 'loans', label: 'Active Loans & Repay', icon: Clock },
-    { id: 'liquidate', label: 'Permissionless Liquidation', icon: ShieldCheck },
-    { id: 'explorer', label: 'Midnight Explorer', icon: ExternalLink },
-    { id: 'contract', label: 'Compact Contract & ZKIR', icon: FileCode2 },
+    { id: 'landing', label: 'Home', icon: Layers },
+    { id: 'whitepaper', label: 'Whitepaper', icon: BookOpen },
+    { id: 'borrower', label: 'Borrow', icon: Lock },
+    { id: 'lender', label: 'Lend', icon: Coins },
+    { id: 'loans', label: 'Loans', icon: Clock },
+    { id: 'liquidate', label: 'Liquidate', icon: ShieldCheck },
+    { id: 'explorer', label: 'Explorer', icon: ExternalLink },
+    { id: 'contract', label: 'Contract & ZKIR', icon: FileCode2 },
   ];
 
   return (
-    <header className="w-full border-b border-[var(--border-subtle)] bg-[rgba(6,9,17,0.85)] sticky top-0 z-50 backdrop-blur-xl">
-      {/* Top Banner */}
-      <div className="max-w-7xl mx-auto px-4 py-2 border-b border-[var(--border-subtle)] flex flex-wrap items-center justify-between text-xs text-[var(--text-muted)] gap-2">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-emerald-400 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>Midnight Testnet (Online)</span>
+    <header className="w-full border-b border-[#eaeae5] bg-[#fbfbf9]/95 sticky top-0 z-50 backdrop-blur-md">
+      {/* Top Telemetry & Simulator Control Strip */}
+      <div className="border-b border-[#eaeae5] bg-[#f5f5f0]/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2 flex flex-wrap items-center justify-between text-xs text-[#525f6c] gap-3">
+          {/* Left Network Telemetry */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Midnight Preview</span>
+            </div>
+            <span className="text-[#d5d5cf] hidden sm:inline">•</span>
+            <div className="hidden sm:flex items-center gap-1.5 font-mono text-[#374151] text-[11px]">
+              <span className="text-[#9ca3af]">Block:</span>
+              <span className="text-[#11161a] font-semibold">#{blockHeight}</span>
+            </div>
+            <span className="text-[#d5d5cf] hidden md:inline">•</span>
+            <div className="hidden md:flex items-center gap-1.5 font-mono text-[#6b7280] text-[11px]">
+              <Clock className="w-3 h-3 text-[#9ca3af]" />
+              <span>{currentTimeStr}</span>
+            </div>
           </div>
-          <span className="text-slate-600">|</span>
-          <div className="flex items-center gap-1 font-mono">
-            <span>Block: #{blockHeight}</span>
-          </div>
-          <span className="text-slate-600">|</span>
-          <div className="flex items-center gap-1 font-mono">
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Protocol Time: {currentTimeStr}</span>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => onAdvanceTime(10)}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1 transition"
-            title="Fast forward protocol clock by 10 days to test due date expiration"
-          >
-            <FastForward className="w-3 h-3 text-amber-400" />
-            <span>+10 Days</span>
-          </button>
-          <button
-            onClick={() => onAdvanceTime(35)}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1 transition"
-            title="Fast forward protocol clock by 35 days for instant loan default"
-          >
-            <FastForward className="w-3 h-3 text-rose-400" />
-            <span>+35 Days</span>
-          </button>
-          <button
-            onClick={onResetDemo}
-            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 transition"
-            title="Reset to default protocol demo state"
-          >
-            <RefreshCw className="w-3 h-3" />
-            <span>Reset Demo</span>
-          </button>
+          {/* Right Status */}
+          <div className="hidden sm:flex items-center gap-2 text-[11px] font-medium text-[#707e8c] shrink-0">
+            <span>Dual-Ledger Protocol</span>
+            <span className="text-[#d5d5cf]">•</span>
+            <span className="text-emerald-700 font-semibold font-mono">Synced</span>
+          </div>
         </div>
       </div>
 
-      {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('landing')}>
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-600 to-purple-600 p-0.5 shadow-lg shadow-cyan-500/20">
-            <div className="w-full h-full bg-[#070b14] rounded-[10px] flex items-center justify-center">
-              <span className="text-xl font-black bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                H
-              </span>
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black tracking-tight text-white">HORIZON</h1>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                Midnight ZK
-              </span>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] hidden sm:block">Private Lending • Proofs Over Disclosure</p>
+      {/* Main App Navigation Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between gap-6">
+        {/* Logo Branding - strictly non-wrapping */}
+        <div 
+          className="flex items-center cursor-pointer select-none shrink-0" 
+          onClick={() => setActiveTab('landing')}
+        >
+          <div className="text-xl sm:text-2xl font-black tracking-[0.18em] text-[#11161a] uppercase whitespace-nowrap shrink-0 hover:opacity-80 transition-opacity">
+            H O R I Z O N
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="hidden lg:flex items-center gap-1 bg-[#090e1a] p-1 rounded-xl border border-[var(--border-subtle)]">
+        {/* Center Pill Navigation */}
+        <nav className="hidden xl:flex items-center gap-1 bg-[#f5f5f0] p-1 rounded-full border border-[#eaeae5] shadow-inner shrink-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -142,44 +105,35 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
                   isActive
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                    ? 'bg-[#11161a] text-white font-semibold shadow-sm'
+                    : 'text-[#525f6c] hover:text-[#11161a] hover:bg-white/60'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#6b7280]'}`} />
                 <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Wallet Connector */}
-        <div className="flex items-center gap-2.5">
+        {/* Right Wallet & Actions */}
+        <div className="flex items-center gap-3 shrink-0">
           {walletConnected && userAddress ? (
-            <div className="flex items-center gap-2">
-              {/* NIGHT Faucet button */}
-              <button
-                onClick={handleFaucet}
-                disabled={faucetLoading}
-                className="hidden sm:flex px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold items-center gap-1.5 transition"
-                title="Get 50,000 Testnet NIGHT tokens from Faucet"
-              >
-                <Coins className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{faucetLoading ? 'Minting...' : '+50k NIGHT'}</span>
-              </button>
-
-              <div className="px-3 py-1.5 rounded-lg bg-slate-800/60 border border-[var(--border-subtle)] flex items-center gap-2 font-mono text-xs">
-                <span className="text-cyan-300 font-bold">{formatNight(userNightBalance)}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span className="text-slate-400">{`${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Wallet Pill with balance and address */}
+              <div className="px-3.5 py-1.5 rounded-full bg-white border border-[#d5d5cf] flex items-center gap-2.5 font-mono text-xs shadow-sm shrink-0">
+                <span className="text-[#11161a] font-bold">{formatNight(userNightBalance)}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[#6b7280]">{`${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`}</span>
               </div>
 
+              {/* Disconnect */}
               <button
                 onClick={onDisconnectWallet}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition"
-                title="Disconnect Lace Wallet"
+                className="p-1.5 rounded-full hover:bg-[#f5f5f0] text-[#6b7280] hover:text-[#11161a] transition shrink-0"
+                title="Disconnect Wallet"
               >
                 ✕
               </button>
@@ -187,17 +141,17 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onOpenWalletModal}
-              className="btn-primary text-xs !py-2 !px-3.5"
+              className="bg-[#11161a] hover:bg-black text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full transition-all shadow-sm hover:shadow active:scale-95 flex items-center gap-2 shrink-0"
             >
-              <Wallet className="w-3.5 h-3.5" />
-              <span>Connect Lace Wallet</span>
+              <Wallet className="w-4 h-4" />
+              <span>Connect Wallet</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Mobile Tab Bar */}
-      <div className="lg:hidden flex overflow-x-auto px-4 py-2 gap-1 border-t border-[var(--border-subtle)] bg-[#070b14]/90">
+      {/* Sub-bar for medium screens / tablet scroll */}
+      <div className="xl:hidden flex overflow-x-auto px-4 py-2 gap-1 border-t border-[#eaeae5] bg-[#f5f5f0] scrollbar-none">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -205,10 +159,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition ${
                 isActive
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#11161a] text-white font-semibold shadow-sm'
+                  : 'text-[#525f6c] hover:text-[#11161a]'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />

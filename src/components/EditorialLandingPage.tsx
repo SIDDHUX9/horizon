@@ -56,7 +56,7 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
             </div>
 
             {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-12 text-sm sm:text-[15px] text-[#181d22] font-semibold tracking-wide">
+            <nav className="hidden md:flex items-center gap-10 text-sm sm:text-[15px] text-[#181d22] font-semibold tracking-wide">
               <button
                 onClick={() => onNavigate('borrower')}
                 className="hover:text-black transition-colors"
@@ -70,10 +70,11 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
                 Lend
               </button>
               <button
-                onClick={() => scrollToSection('how-it-works')}
-                className="hover:text-black transition-colors"
+                onClick={() => onNavigate('whitepaper')}
+                className="hover:text-black transition-colors flex items-center gap-1"
               >
-                How it works
+                <span>Whitepaper</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-black/5 text-black/70">v1.0</span>
               </button>
               <button
                 onClick={() => onNavigate('explorer')}
@@ -556,8 +557,11 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
 
           {/* Links */}
           <div className="flex items-center gap-8 text-sm font-medium text-[#4b5563]">
+            <button onClick={() => onNavigate('whitepaper')} className="hover:text-black transition-colors font-semibold text-[#11161a]">
+              Whitepaper
+            </button>
             <button onClick={() => onNavigate('contract')} className="hover:text-black transition-colors">
-              Docs
+              Docs &amp; ZKIR
             </button>
             <button onClick={() => onNavigate('contract')} className="hover:text-black transition-colors">
               GitHub

@@ -12,6 +12,7 @@ import {
   formatNight 
 } from './contracts/horizonSimulator';
 import { EditorialLandingPage } from './components/EditorialLandingPage';
+import { WhitepaperPage } from './components/WhitepaperPage';
 import { WalletModal } from './components/WalletModal';
 import { 
   getAvailableMidnightWallets, 
@@ -19,6 +20,11 @@ import {
   DiscoveredWallet 
 } from './services/laceWallet';
 import { MidnightLiveIndexer } from './services/midnightLiveIndexer';
+import { 
+  getCurrentRoute, 
+  navigateToRoute, 
+  ProtocolRoute 
+} from './services/router';
 import { 
   LendingPool, 
   Loan, 
@@ -29,7 +35,7 @@ import {
 } from './types/horizon';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('landing');
+  const [activeTab, setActiveTab] = useState<ProtocolRoute>(() => getCurrentRoute());
   const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [shieldedAddress, setShieldedAddress] = useState<string | undefined>(undefined);
@@ -80,6 +86,40 @@ export const App: React.FC = () => {
     const timer = setInterval(fetchLiveHeight, 15000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getCurrentRoute());
+    };
+    const handleCustomRoute = (e: any) => {
+      if (e.detail?.route) {
+        setActiveTab(e.detail.route);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('protocol-route-change', handleCustomRoute);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('protocol-route-change', handleCustomRoute);
+    };
+  }, []);
+
+  const handleNavigate = (route: ProtocolRoute | string) => {
+    let cleanRoute: ProtocolRoute = 'landing';
+    if (route === 'landing' || route === '/' || route === '/home') cleanRoute = 'landing';
+    else if (route === 'whitepaper' || route === '/whitepaper') cleanRoute = 'whitepaper';
+    else if (route === 'borrower' || route === 'borrow' || route === '/borrow') cleanRoute = 'borrower';
+    else if (route === 'lender' || route === 'lend' || route === '/lend') cleanRoute = 'lender';
+    else if (route === 'loans' || route === '/loans') cleanRoute = 'loans';
+    else if (route === 'liquidate' || route === '/liquidate') cleanRoute = 'liquidate';
+    else if (route === 'explorer' || route === '/explorer') cleanRoute = 'explorer';
+    else if (route === 'contract' || route === 'contracts' || route === '/contract') cleanRoute = 'contract';
+    else if (route === 'pitch' || route === 'architecture' || route === '/architecture') cleanRoute = 'pitch';
+
+    setActiveTab(cleanRoute);
+    navigateToRoute(cleanRoute);
+  };
 
   const handleConnectLace = async (walletId?: string) => {
     setIsConnectingLace(true);
@@ -261,7 +301,7 @@ export const App: React.FC = () => {
 
   const handleSelectPoolForBorrow = (poolId: string) => {
     setSelectedPoolForBorrow(poolId);
-    setActiveTab('borrower');
+    handleNavigate('borrower');
   };
 
   const currentTimeDate = new Date(Number(currentTime) * 1000);
@@ -271,7 +311,7 @@ export const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#fbfbf9]">
         <EditorialLandingPage
-          onNavigate={setActiveTab}
+          onNavigate={handleNavigate}
           walletConnected={walletConnected}
           userAddress={userAddress}
           onOpenWalletModal={() => setWalletModalOpen(true)}
@@ -318,12 +358,59 @@ export const App: React.FC = () => {
     );
   }
 
+  if (activeTab === 'whitepaper') {
+    return (
+      <div className="min-h-screen bg-[#fbfbf9]">
+        <WhitepaperPage
+          onNavigate={handleNavigate}
+          blockHeight={blockHeight}
+        />
+
+        <WalletModal
+          isOpen={walletModalOpen}
+          onClose={() => setWalletModalOpen(false)}
+          onConnect={handleConnectLace}
+          isConnecting={isConnectingLace}
+          errorMessage={laceError}
+          discoveredWallets={discoveredWallets}
+          onCheckDetection={checkLace}
+          connectedAddress={userAddress}
+          shieldedAddress={shieldedAddress}
+          dustBalance={dustBalance}
+          dustCap={dustCap}
+          networkId={networkId}
+          indexerUri={indexerUri}
+          selectedNetwork={selectedNetwork}
+          onSelectNetwork={setSelectedNetwork}
+          onDisconnect={handleDisconnectLace}
+        />
+
+        {toast && (
+          <div className="fixed bottom-6 right-6 z-50 animate-fadeIn">
+            <div
+              className={`px-4 py-3 rounded-2xl shadow-xl border text-xs font-mono font-semibold flex items-center gap-2.5 bg-white ${
+                toast.type === 'success'
+                  ? 'text-emerald-800 border-emerald-200'
+                  : toast.type === 'error'
+                  ? 'text-rose-800 border-rose-200'
+                  : 'text-[#11161a] border-[#eaeae5]'
+              }`}
+            >
+              <span>{toast.type === 'success' ? '⚡' : toast.type === 'error' ? '⚠️' : 'ℹ️'}</span>
+              <span>{toast.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="min-h-screen flex flex-col bg-[#fbfbf9] text-[#11161a]">
       {/* Header */}
       <Header
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleNavigate}
         blockHeight={blockHeight}
         walletConnected={walletConnected}
         userAddress={userAddress}
@@ -357,7 +444,7 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 sm:py-10">
-        {activeTab === 'pitch' && <DualLedgerPitch onNavigate={setActiveTab} />}
+        {activeTab === 'pitch' && <DualLedgerPitch onNavigate={handleNavigate} />}
 
         {activeTab === 'lender' && (
           <LenderHub
@@ -414,14 +501,14 @@ export const App: React.FC = () => {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 animate-fadeIn">
           <div
-            className={`px-4 py-3 rounded-xl shadow-2xl border text-xs font-mono font-semibold flex items-center gap-2 ${
+            className={`px-4 py-3 rounded-2xl shadow-xl border text-xs font-mono font-semibold flex items-center gap-2.5 bg-white ${
               toast.type === 'success'
-                ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
+                ? 'text-emerald-800 border-emerald-200'
                 : toast.type === 'error'
-                ? 'bg-rose-950/90 text-rose-300 border-rose-500/40'
-                : 'bg-cyan-950/90 text-cyan-300 border-cyan-500/40'
+                ? 'text-rose-800 border-rose-200'
+                : 'text-[#11161a] border-[#eaeae5]'
             }`}
           >
             <span>{toast.type === 'success' ? '⚡' : toast.type === 'error' ? '⚠️' : 'ℹ️'}</span>
@@ -431,17 +518,25 @@ export const App: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-[var(--border-subtle)] bg-[#04070e] py-6 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 font-mono">
-            <span className="font-bold text-slate-300">HORIZON PROTOCOL</span>
-            <span>•</span>
-            <span>Midnight Network Private Lending</span>
+      <footer className="border-t border-[#eaeae5] bg-[#fbfbf9] py-8 text-xs text-[#525f6c]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span 
+              onClick={() => handleNavigate('landing')}
+              className="font-extrabold tracking-[0.18em] text-[#11161a] uppercase cursor-pointer text-sm hover:opacity-80 transition"
+            >
+              H O R I Z O N
+            </span>
+            <span className="text-[#d5d5cf]">|</span>
+            <span className="text-[#525f6c] font-medium">Zero-Knowledge Private Credit Protocol</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Dual-Ledger Zero-Knowledge Architecture</span>
-            <span>•</span>
-            <span className="font-mono text-cyan-400">compactc v0.34.0</span>
+          <div className="flex items-center gap-6 text-[#525f6c] font-medium">
+            <button onClick={() => handleNavigate('landing')} className="hover:text-[#11161a] transition">Home</button>
+            <button onClick={() => handleNavigate('whitepaper')} className="hover:text-[#11161a] transition">Whitepaper</button>
+            <button onClick={() => handleNavigate('borrower')} className="hover:text-[#11161a] transition">Borrow</button>
+            <button onClick={() => handleNavigate('lender')} className="hover:text-[#11161a] transition">Lend</button>
+            <button onClick={() => handleNavigate('explorer')} className="hover:text-[#11161a] transition">Explorer</button>
+            <button onClick={() => handleNavigate('contract')} className="hover:text-[#11161a] transition">Contract</button>
           </div>
         </div>
       </footer>
