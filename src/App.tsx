@@ -18,6 +18,7 @@ import {
   connectLaceWallet, 
   DiscoveredWallet 
 } from './services/laceWallet';
+import { MidnightLiveIndexer } from './services/midnightLiveIndexer';
 import { 
   LendingPool, 
   Loan, 
@@ -69,6 +70,15 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     checkLace();
+    const fetchLiveHeight = async () => {
+      const blocks = await MidnightLiveIndexer.getLatestBlocks(1);
+      if (blocks.length > 0 && blocks[0].height) {
+        setBlockHeight(blocks[0].height);
+      }
+    };
+    fetchLiveHeight();
+    const timer = setInterval(fetchLiveHeight, 15000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleConnectLace = async (walletId?: string) => {

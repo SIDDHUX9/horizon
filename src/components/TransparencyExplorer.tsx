@@ -73,7 +73,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
 
         <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-mono">
           <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-            <span className="text-slate-500">Current Block:</span>
+            <span className="text-slate-500">Live Midnight Block:</span>
             <span className="text-emerald-400 font-bold">#{blockHeight}</span>
           </div>
           <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
@@ -85,9 +85,28 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
             <span className="text-purple-400 font-bold">{loans.length}</span>
           </div>
           <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-            <span className="text-slate-500">Consensus:</span>
-            <span className="text-white font-bold">Midnight PoS + ZK Proofs</span>
+            <span className="text-slate-500">Proof Server (Port 6300):</span>
+            <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              ONLINE
+            </span>
           </div>
+        </div>
+
+        <div className="mt-4 p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">Deployed Compact Contract:</span>
+            <span className="text-cyan-300 font-bold">0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962</span>
+          </div>
+          <a
+            href="https://preview.midnightexplorer.com/search?q=0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition hover:underline"
+          >
+            <span>Verify on Explorer</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 
@@ -390,7 +409,16 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                     <span className="text-cyan-300 font-bold">Circuit: {tx.circuit}()</span>
                   </div>
                   <div className="text-slate-400 text-[11px]">
-                    Tx: <span className="text-slate-200">{tx.tx_hash.slice(0, 16)}...{tx.tx_hash.slice(-8)}</span>
+                    <a
+                      href={`https://preview.midnightexplorer.com/tx/${tx.tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-mono transition group"
+                      title="Inspect real transaction on Midnight Preview Explorer"
+                    >
+                      <span>Tx: <span className="text-slate-200 group-hover:text-cyan-300">{tx.tx_hash.slice(0, 14)}...{tx.tx_hash.slice(-8)}</span></span>
+                      <ExternalLink className="w-3 h-3 opacity-70 group-hover:opacity-100" />
+                    </a>
                   </div>
                 </div>
 

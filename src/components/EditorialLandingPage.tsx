@@ -50,7 +50,7 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
             {/* Logo */}
             <div
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-sm sm:text-base font-bold tracking-[0.38em] text-[#11161a] uppercase cursor-pointer hover:opacity-85 transition-opacity"
+              className="text-xl sm:text-2xl font-black tracking-[0.18em] text-[#11161a] uppercase cursor-pointer hover:opacity-85 transition-opacity select-none"
             >
               H O R I Z O N
             </div>
@@ -547,7 +547,7 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
         <div className="max-w-7xl mx-auto px-6 sm:px-12 flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-[#4b5563]">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <span className="font-bold tracking-[0.3em] text-[#11161a] uppercase text-sm">
+            <span className="font-extrabold tracking-[0.18em] text-[#11161a] uppercase text-base">
               H O R I Z O N
             </span>
             <span className="text-[#c4c3bb]">|</span>
