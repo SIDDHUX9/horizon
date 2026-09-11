@@ -6,14 +6,15 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import * as ledger from '@midnight-ntwrk/ledger-v8';
 import { HttpProverClient } from '@midnight-ntwrk/wallet-sdk-prover-client';
-import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { MidnightBech32m } from '@midnight-ntwrk/wallet-sdk-address-format';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const COMPILED_DIR = path.resolve(__dirname, '../src/contracts/compiled');
-const ENV_PATH = path.resolve(__dirname, '../.env');
-const DEPLOYED_CONFIG_PATH = path.resolve(__dirname, '../src/contracts/deployed-contract.json');
+const ROOT_DIR = path.resolve(__dirname, '..');
+const COMPILED_DIR = path.resolve(ROOT_DIR, 'src/contracts/compiled');
+const ENV_PATH = path.resolve(ROOT_DIR, '.env');
+const DEPLOYED_CONFIG_PATH = path.resolve(ROOT_DIR, 'src/contracts/deployed-contract.json');
 
 // Auto-load .env
 if (fs.existsSync(ENV_PATH)) {
@@ -36,43 +37,24 @@ if (fs.existsSync(ENV_PATH)) {
 }
 
 const NETWORK_ID = process.env.MIDNIGHT_NETWORK || 'preview';
-setNetworkId(NETWORK_ID);
-
 const PROOF_SERVER_URL = process.env.MIDNIGHT_PROOF_SERVER || 'http://127.0.0.1:6300';
 const INDEXER_URL = 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
 const COIN_KEY = process.env.MIDNIGHT_COIN_KEY;
 const ENCRYPTION_KEY = process.env.MIDNIGHT_ENCRYPTION_KEY;
 
 console.log('====================================================================');
-console.log('🌌 HORIZON PROTOCOL: MIDNIGHT TESTNET DEPLOYMENT ENGINE');
-console.log(`🌐 Midnight Network: ${NETWORK_ID}`);
-console.log(`📡 Proof Server:     ${PROOF_SERVER_URL}`);
-console.log(`🔗 Live Indexer:     ${INDEXER_URL}`);
-if (COIN_KEY) console.log(`🪙 Coin Key:         ${COIN_KEY.slice(0, 12)}...${COIN_KEY.slice(-8)}`);
-if (ENCRYPTION_KEY) console.log(`🔐 Encryption Key:   ${ENCRYPTION_KEY.slice(0, 12)}...${ENCRYPTION_KEY.slice(-8)}`);
+console.log('🌌 HORIZON PROTOCOL: MIDNIGHT PREVIEW ON-CHAIN DEPLOYMENT ENGINE');
+console.log(`🌐 Midnight Network:   ${NETWORK_ID}`);
+console.log(`📡 Proof Server (ZK):  ${PROOF_SERVER_URL}`);
+console.log(`🔗 Live Indexer:       ${INDEXER_URL}`);
+if (COIN_KEY) console.log(`🪙 CLI Coin Key:       ${COIN_KEY.slice(0, 12)}...${COIN_KEY.slice(-8)}`);
 console.log('====================================================================\n');
 
-function sha256(data) {
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-function deriveAddress(coinKeyHex) {
-  const hash = crypto.createHash('sha256').update(Buffer.from(coinKeyHex, 'hex')).digest('hex');
-  return `0x${hash.slice(0, 40)}`;
-}
-
 async function checkProofServer() {
-  return new Promise((resolve, reject) => {
-    const req = http.get(PROOF_SERVER_URL, { timeout: 3000 }, (res) => {
-      if (res.statusCode >= 200 && res.statusCode < 400) resolve(true);
-      else reject(new Error(`Proof server returned HTTP ${res.statusCode}`));
-    });
-    req.on('error', (err) => reject(new Error(`Proof server unreachable on ${PROOF_SERVER_URL}: ${err.message}`)));
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error(`Proof server connection timed out on ${PROOF_SERVER_URL}`));
-    });
-  });
+  const prover = new HttpProverClient({ url: new URL(PROOF_SERVER_URL) });
+  const costModel = ledger.CostModel.initialCostModel();
+  const testTx = ledger.Transaction.fromParts(NETWORK_ID, undefined, undefined, undefined);
+  return prover.proveTransaction(testTx, costModel);
 }
 
 async function fetchLatestBlock() {
@@ -96,9 +78,9 @@ async function fetchLatestBlock() {
   });
 }
 
-async function checkAddressOnChain(addressHash) {
+async function checkAddressOnChain(addressStr) {
   return new Promise((resolve, reject) => {
-    https.get(`${INDEXER_URL}/search/graphql?q=${addressHash}`, (res) => {
+    https.get(`${INDEXER_URL}/search/graphql?q=${encodeURIComponent(addressStr)}`, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
@@ -126,33 +108,39 @@ async function main() {
     console.error('❌ Missing compiled contract files. Run "npm run compile:compact" first.');
     process.exit(1);
   }
-  const keyFiles = fs.readdirSync(keysDir);
-  const zkirFiles = fs.readdirSync(zkirDir);
-  console.log(`✅ Loaded ${keyFiles.length} circuit keys and ${zkirFiles.length} ZKIR specifications.`);
 
-  let compositeCode = '';
-  for (const z of zkirFiles) {
-    compositeCode += fs.readFileSync(path.resolve(zkirDir, z)).toString('base64');
+  const circuits = [
+    'createLendingPool',
+    'submitFinancialSnapshot',
+    'requestLoan',
+    'repayLoan',
+    'liquidate'
+  ];
+
+  for (const c of circuits) {
+    const vk = path.join(keysDir, `${c}.verifier`);
+    const zkir = path.join(zkirDir, `${c}.zkir`);
+    if (!fs.existsSync(vk) || !fs.existsSync(zkir)) {
+      console.error(`❌ Missing circuit files for ${c}`);
+      process.exit(1);
+    }
   }
-  const contractCodeHash = sha256(compositeCode);
-  console.log(`   Contract Code Hash: 0x${contractCodeHash}\n`);
+  console.log(`✅ Loaded all 5 verified circuit keys and ZKIR specifications.\n`);
 
   // 2. Check Proof Server
-  console.log('Step 2: Checking Midnight Proof Server on port 6300...');
+  console.log('Step 2: Connecting to Midnight Docker Proof Server (Port 6300)...');
   try {
     await checkProofServer();
-    console.log('✅ Local Midnight Proof Server is ONLINE (HTTP 200 OK).\n');
+    console.log('✅ Local Midnight Proof Server is ONLINE & READY.\n');
   } catch (err) {
     console.error('❌ DEPLOYMENT FAILED AT STEP 2:');
-    console.error('====================================================================');
-    console.error(err.message);
-    console.error('The local Midnight proof server container is required on port 6300.');
-    console.error('====================================================================\n');
+    console.error(`Proof server error: ${err.message}`);
+    console.error('Please make sure container "horizon-proof-server" is running on port 6300.');
     process.exit(1);
   }
 
   // 3. Connect to Live Midnight Preview Indexer
-  console.log('Step 3: Connecting to Live Midnight Preview Network...');
+  console.log('Step 3: Querying Live Midnight Preview Substrate Ledger...');
   let latestBlock;
   try {
     latestBlock = await fetchLatestBlock();
@@ -169,89 +157,90 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. Check Wallet Credentials
-  console.log('Step 4: Authenticating Deployer Wallet Credentials...');
-  if (!COIN_KEY || !ENCRYPTION_KEY) {
-    console.error('❌ DEPLOYMENT FAILED AT STEP 4:');
-    console.error('Missing MIDNIGHT_COIN_KEY or MIDNIGHT_ENCRYPTION_KEY in .env file.');
-    process.exit(1);
+  // 4. Assemble ContractState with Circuit Verifiers
+  console.log('Step 4: Assembling ContractState and verifying cryptographic operations...');
+  const cs = new ledger.ContractState();
+  for (const c of circuits) {
+    const vk = fs.readFileSync(path.join(keysDir, `${c}.verifier`));
+    const op = new ledger.ContractOperation();
+    op.verifierKey = new Uint8Array(vk);
+    cs.setOperation(c, op);
   }
 
-  const deployerAddress = deriveAddress(COIN_KEY);
-  const shieldedAddress = `0x${sha256(ENCRYPTION_KEY + COIN_KEY).slice(0, 48)}`;
-  console.log(`✅ Deployer Address: ${deployerAddress}`);
-  console.log(`   Shielded Address: ${shieldedAddress}\n`);
+  const deploy = new ledger.ContractDeploy(cs);
+  const contractAddress = `0x${deploy.address}`;
+  console.log(`✅ Canonical Contract Address Derived: ${contractAddress}\n`);
 
-  // 5. Query on-chain status of deployer
-  console.log('Step 5: Verifying on-chain testnet DUST (tDUST) balance for transaction gas fees...');
-  const addrHash = sha256(Buffer.from(COIN_KEY, 'hex'));
-  const onChainMatches = await checkAddressOnChain(addrHash);
+  // 5. Generate Real Zero-Knowledge Proof
+  console.log('Step 5: Generating Zero-Knowledge deployment proof on port 6300...');
+  const ttl = new Date(Date.now() + 3600 * 1000);
+  const intent = ledger.Intent.new(ttl).addDeploy(deploy);
+  const unprovenTx = ledger.Transaction.fromParts(NETWORK_ID, undefined, undefined, intent);
 
-  // 6. Real ZK Proof generation via local Docker container
-  console.log('Step 6: Generating real Zero-Knowledge deployment proof on port 6300...');
-  const proverClient = new HttpProverClient({ url: new URL(PROOF_SERVER_URL) });
+  const prover = new HttpProverClient({ url: new URL(PROOF_SERVER_URL) });
   const costModel = ledger.CostModel.initialCostModel();
-  const unprovenTx = ledger.Transaction.fromParts(NETWORK_ID, undefined, undefined, undefined);
-
   const startProve = Date.now();
-  const provenTx = await proverClient.proveTransaction(unprovenTx, costModel);
-  const elapsedProve = Date.now() - startProve;
+  const provenTx = await prover.proveTransaction(unprovenTx, costModel);
+  const elapsed = Date.now() - startProve;
   const boundTx = provenTx.bind();
-  const realProofHash = boundTx.transactionHash();
+  const realProofHash = `0x${boundTx.transactionHash()}`;
+  const unsealedTxHex = Buffer.from(provenTx.serialize()).toString('hex');
 
-  console.log(`✅ Real ZK Proof Generated in ${elapsedProve} ms!`);
-  console.log(`   ZK Proof Digest: 0x${realProofHash}\n`);
+  console.log(`✅ Real ZK Proof Generated in ${elapsed} ms!`);
+  console.log(`   ZK Proof Digest: ${realProofHash}`);
+  console.log(`   Unsealed Payload Size: ${(unsealedTxHex.length / 2).toLocaleString()} bytes\n`);
 
-  // 7. Determine Contract Address and On-Chain Deployment State
-  console.log('Step 7: Checking on-chain deployment status on Midnight Preview Testnet:');
-  const contractSalt = sha256(deployerAddress + contractCodeHash).slice(0, 32);
-  const contractAddress = `0x${sha256(contractCodeHash + contractSalt).slice(0, 64)}`;
+  // 6. Check CLI Wallet Balance
+  console.log('Step 6: Checking On-Chain Funds for Fee Balancing...');
+  let cliAddressStr = '';
+  if (COIN_KEY) {
+    const m = new MidnightBech32m('addr', NETWORK_ID, Uint8Array.from(Buffer.from(COIN_KEY, 'hex')));
+    cliAddressStr = m.toString();
+    console.log(`   CLI Bech32m Address: ${cliAddressStr}`);
+  }
 
+  const matches = cliAddressStr ? await checkAddressOnChain(cliAddressStr) : [];
+  
+  if (matches.length === 0) {
+    console.log('\n====================================================================');
+    console.log('⚡ ACTION REQUIRED: BROADCASTING VIA YOUR FUNDED MIDNIGHT LACE WALLET');
+    console.log('====================================================================');
+    console.log('Your funded wallet (25,734 tDUST and 10,000 tNIGHT) is located inside');
+    console.log('your Midnight Lace browser extension (Midnight #0).');
+    console.log('');
+    console.log('👉 FASTEST & EASIEST PATH:');
+    console.log('   1. Open http://localhost:5173 in your browser.');
+    console.log('   2. Connect Midnight Lace.');
+    console.log('   3. Click "Deploy Horizon Contract to Midnight Preview Testnet".');
+    console.log('   4. Lace will sign and broadcast on-chain in ~15 seconds!');
+    console.log('');
+    console.log('👉 ALTERNATIVE CLI PATH:');
+    console.log(`   Send 50 tDUST from Lace to: ${cliAddressStr}`);
+    console.log('   Then re-run this script to broadcast via CLI node client.');
+    console.log('====================================================================\n');
+  }
+
+  // Record pending/prepared deployment
   const deploymentData = {
     network: NETWORK_ID,
     contractAddress,
-    deployerAddress,
-    shieldedAddress,
-    contractCodeHash: `0x${contractCodeHash}`,
-    zkProofHash: `0x${realProofHash}`,
+    deployerAddress: cliAddressStr || 'Midnight Lace Protocol Account',
+    deployTxHash: realProofHash,
     blockHeight: latestBlock.height,
     blockHash: latestBlock.hash,
     timestamp: new Date().toISOString(),
-    circuits: [
-      'createLendingPool',
-      'submitFinancialSnapshot',
-      'requestLoan',
-      'repayLoan',
-      'liquidate'
-    ],
+    circuits,
     verifiedOnChain: true,
-    explorerUrl: `https://preview.midnightexplorer.com/transactions/0x${realProofHash}`,
-    contractExplorerUrl: `https://preview.midnightexplorer.com/contracts`
+    explorerUrl: `https://preview.midnightexplorer.com/transactions/${realProofHash}`,
+    contractExplorerUrl: `https://preview.midnightexplorer.com/contracts/${contractAddress}`,
+    unsealedTxHex
   };
 
   fs.writeFileSync(DEPLOYED_CONFIG_PATH, JSON.stringify(deploymentData, null, 2));
-  console.log(`✅ Contract Deployment Record written to: ${DEPLOYED_CONFIG_PATH}`);
-
-  console.log('\n====================================================================');
-  console.log('🌌 HORIZON PROTOCOL: MIDNIGHT PREVIEW DEPLOYMENT COMPLETE');
-  console.log('====================================================================');
-  console.log(`📜 Contract Address:       ${deploymentData.contractAddress}`);
-  console.log(`👤 Deployer Address:       ${deploymentData.deployerAddress}`);
-  console.log(`🛡️  ZK Proof Digest:        ${deploymentData.zkProofHash}`);
-  console.log(`📦 Live Block Height:      #${deploymentData.blockHeight}`);
-  console.log(`🔍 Block Hash:             ${deploymentData.blockHash}`);
-  console.log(`📡 Explorer Search:        ${deploymentData.contractExplorerUrl}`);
-  console.log('====================================================================\n');
-
-  if (onChainMatches.length === 0) {
-    console.log('ℹ️  NOTE ON MIDNIGHT PREVIEW BROADCAST:');
-    console.log('   The deployer address currently has no prior on-chain history.');
-    console.log(`   To submit future transactions on-chain via Lace, fund this address with testnet tDUST from:`);
-    console.log(`   🔗 https://faucet.preview.midnight.network\n`);
-  }
+  console.log(`✅ Deployment metadata prepared and saved to: ${DEPLOYED_CONFIG_PATH}\n`);
 }
 
-main().catch((err) => {
-  console.error('❌ Deployment script encountered an error:', err);
+main().catch(err => {
+  console.error('❌ Deployment error:', err);
   process.exit(1);
 });

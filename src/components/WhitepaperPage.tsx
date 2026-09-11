@@ -25,12 +25,12 @@ interface WhitepaperPageProps {
   blockHeight?: number;
 }
 
-export const WhitepaperPage: React.FC<WhitepaperPageProps> = ({ onNavigate, blockHeight = 805390 }) => {
+export const WhitepaperPage: React.FC<WhitepaperPageProps> = ({ onNavigate, blockHeight = 815539 }) => {
   const [copied, setCopied] = useState(false);
   const [activeSection, setActiveSection] = useState('abstract');
 
-  const contractAddress = '0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962';
-  const zkProofHash = '0x930ab57c0e90799b6d6e4ae9a0ff7650b80541d49969377b0ed1334dd321faa1';
+  const contractAddress = '0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee';
+  const zkProofHash = '0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26';
 
   const sections = [
     { id: 'abstract', title: 'Abstract & Executive Summary' },
@@ -487,7 +487,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
                 <span className="text-[#707e8c]">Deployed Contract:</span>
                 <a
-                  href="https://preview.midnightexplorer.com/contracts"
+                  href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-cyan-700 hover:underline break-all"

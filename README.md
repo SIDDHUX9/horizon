@@ -51,10 +51,9 @@ Horizon is deployed and operating live on the **Midnight Preview Testnet**:
 | Parameter | Live Value |
 | :--- | :--- |
 | **Network** | `Midnight Preview` (Substrate v2) |
-| **Block Height** | `#807,850+` |
-| **Deployed Contract Address** | [`0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962`](https://preview.midnightexplorer.com/contracts) |
-| **Contract Code Hash** | `0xd71fb19791de3d5dbd68ce8c438b7e735704f865e8ac69514847094691089bb9` |
-| **Real ZK Proof Hash** | [`0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510`](https://preview.midnightexplorer.com/transactions/0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510) |
+| **Block Height** | `#815,539+` |
+| **Deployed Contract Address** | [`0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee`](https://preview.midnightexplorer.com/contracts/0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee) |
+| **Deploy Transaction Hash** | [`0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26`](https://preview.midnightexplorer.com/transactions/0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26) |
 | **Live Explorer REST API** | `https://preview-service-v2-01.midnightexplorer.com/api/v1` |
 | **Local Proof Server** | `http://127.0.0.1:6300` (`ghcr.io/midnight-ntwrk/proof-server:latest`) |
 
@@ -219,6 +218,37 @@ horizon/
 ├── package.json                    # Project scripts & dependencies
 └── vite.config.ts                  # Vite build configuration
 ```
+
+---
+
+## 🚀 Deploy to Production (Vercel)
+
+Horizon Protocol is ready for instant one-click deployment on Vercel:
+
+### Option 1: Vercel CLI
+```bash
+# Install Vercel CLI (if not already installed)
+npm install -g vercel
+
+# Deploy directly to production
+vercel --prod
+```
+
+### Option 2: Vercel Dashboard (GitHub Git Integration)
+1. Push your changes to your GitHub repository:
+   ```bash
+   git add .
+   git commit -m "Deploy Horizon Protocol to production"
+   git push origin main
+   ```
+2. Navigate to [vercel.com/new](https://vercel.com/new).
+3. Import your repository.
+4. Framework Preset will automatically detect **Vite**.
+5. Build Command: `npm run build`
+6. Output Directory: `dist`
+7. Click **Deploy**.
+
+The bundled `vercel.json` automatically manages client-side SPA routing (`/whitepaper`, `/borrow`, `/lend`, `/explorer`, etc.) and sets production security and caching headers.
 
 ---
 

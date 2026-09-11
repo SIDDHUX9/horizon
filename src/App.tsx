@@ -14,10 +14,12 @@ import {
 import { EditorialLandingPage } from './components/EditorialLandingPage';
 import { WhitepaperPage } from './components/WhitepaperPage';
 import { WalletModal } from './components/WalletModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
   getAvailableMidnightWallets, 
   connectLaceWallet, 
-  DiscoveredWallet 
+  DiscoveredWallet,
+  LaceConnectedSession
 } from './services/laceWallet';
 import { MidnightLiveIndexer } from './services/midnightLiveIndexer';
 import { 
@@ -50,6 +52,7 @@ export const App: React.FC = () => {
   const [discoveredWallets, setDiscoveredWallets] = useState<DiscoveredWallet[]>([]);
   const [isConnectingLace, setIsConnectingLace] = useState(false);
   const [laceError, setLaceError] = useState<string | null>(null);
+  const [laceSession, setLaceSession] = useState<LaceConnectedSession | null>(null);
 
   // Protocol state synced from horizon simulator
   const [pools, setPools] = useState<LendingPool[]>(() => horizon.getPools());
@@ -126,6 +129,7 @@ export const App: React.FC = () => {
     setLaceError(null);
     try {
       const session = await connectLaceWallet(walletId, selectedNetwork);
+      setLaceSession(session);
       setUserAddress(session.unshieldedAddress);
       setShieldedAddress(session.shieldedAddress);
       setDustBalance(session.dustBalance);
@@ -144,6 +148,7 @@ export const App: React.FC = () => {
   };
 
   const handleDisconnectLace = () => {
+    setLaceSession(null);
     setUserAddress(null);
     setShieldedAddress(undefined);
     setDustBalance(undefined);
@@ -444,59 +449,63 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 sm:py-10">
-        {activeTab === 'pitch' && <DualLedgerPitch onNavigate={handleNavigate} />}
+        <ErrorBoundary>
+          {activeTab === 'pitch' && <DualLedgerPitch onNavigate={handleNavigate} />}
 
-        {activeTab === 'lender' && (
-          <LenderHub
-            pools={pools}
-            onCreatePool={handleCreatePool}
-            onSelectPoolForBorrow={handleSelectPoolForBorrow}
-            userNightBalance={userNightBalance}
-          />
-        )}
+          {activeTab === 'lender' && (
+            <LenderHub
+              pools={pools}
+              onCreatePool={handleCreatePool}
+              onSelectPoolForBorrow={handleSelectPoolForBorrow}
+              userNightBalance={userNightBalance}
+            />
+          )}
 
-        {activeTab === 'borrower' && (
-          <BorrowerStudio
-            pools={pools}
-            selectedPoolId={selectedPoolForBorrow}
-            onSnapshotSubmitted={handleSnapshotSubmitted}
-            onRequestLoan={handleRequestLoan}
-            userNightBalance={userNightBalance}
-            currentCommitment={currentCommitment}
-            borrowerAddress={userAddress || ''}
-          />
-        )}
+          {activeTab === 'borrower' && (
+            <BorrowerStudio
+              pools={pools}
+              selectedPoolId={selectedPoolForBorrow}
+              onSnapshotSubmitted={handleSnapshotSubmitted}
+              onRequestLoan={handleRequestLoan}
+              userNightBalance={userNightBalance}
+              currentCommitment={currentCommitment}
+              borrowerAddress={userAddress || ''}
+            />
+          )}
 
-        {activeTab === 'loans' && (
-          <LoanDetailTerminal
-            loans={loans}
-            repayments={repayments}
-            onRepayLoan={handleRepayLoan}
-            userNightBalance={userNightBalance}
-            currentTime={currentTime}
-          />
-        )}
+          {activeTab === 'loans' && (
+            <LoanDetailTerminal
+              loans={loans}
+              repayments={repayments}
+              onRepayLoan={handleRepayLoan}
+              userNightBalance={userNightBalance}
+              currentTime={currentTime}
+            />
+          )}
 
-        {activeTab === 'liquidate' && (
-          <LiquidationTerminal
-            loans={loans}
-            currentTime={currentTime}
-            onAdvanceTime={handleAdvanceTime}
-            onLiquidate={handleLiquidate}
-          />
-        )}
+          {activeTab === 'liquidate' && (
+            <LiquidationTerminal
+              loans={loans}
+              currentTime={currentTime}
+              onAdvanceTime={handleAdvanceTime}
+              onLiquidate={handleLiquidate}
+            />
+          )}
 
-        {activeTab === 'explorer' && (
-          <TransparencyExplorer
-            transactions={transactions}
-            blockHeight={blockHeight}
-            loans={loans}
-            pools={pools}
-            repayments={repayments}
-          />
-        )}
+          {activeTab === 'explorer' && (
+            <TransparencyExplorer
+              transactions={transactions}
+              blockHeight={blockHeight}
+              loans={loans}
+              pools={pools}
+              repayments={repayments}
+              laceSession={laceSession}
+              onOpenWalletModal={() => setWalletModalOpen(true)}
+            />
+          )}
 
-        {activeTab === 'contract' && <ContractCodeViewer />}
+          {activeTab === 'contract' && <ContractCodeViewer />}
+        </ErrorBoundary>
       </main>
 
       {/* Toast Notification */}

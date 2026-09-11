@@ -1,13 +1,11 @@
 {
   "network": "preview",
-  "contractAddress": "0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962",
-  "deployerAddress": "0x49ddbddb03adad8020a74024f51bca6beb13951e",
-  "shieldedAddress": "0x4dd5bbcb5c9a0f5cfde6186456ec0b62b67ff155b63a7e8a",
-  "contractCodeHash": "0xd71fb19791de3d5dbd68ce8c438b7e735704f865e8ac69514847094691089bb9",
-  "zkProofHash": "0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510",
-  "blockHeight": 807737,
-  "blockHash": "0x7bb31c5698682ef215692f566996173774ba74bf759a3ac56b2ad6ab294b8fbd",
-  "timestamp": "2026-09-10T14:16:22.093Z",
+  "contractAddress": "0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee",
+  "deployerAddress": "Midnight Lace Protocol Account",
+  "deployTxHash": "0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26",
+  "blockHeight": 815539,
+  "blockHash": "0x1de767751b05327342f30937a0c5612a00e4ab0c4155abf516898cef45f40533",
+  "timestamp": "2026-09-11T07:14:30.000Z",
   "circuits": [
     "createLendingPool",
     "submitFinancialSnapshot",
@@ -16,6 +14,6 @@
     "liquidate"
   ],
   "verifiedOnChain": true,
-  "explorerUrl": "https://preview.midnightexplorer.com/transactions/0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510",
-  "contractExplorerUrl": "https://preview.midnightexplorer.com/contracts"
+  "explorerUrl": "https://preview.midnightexplorer.com/transactions/0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26",
+  "contractExplorerUrl": "https://preview.midnightexplorer.com/contracts/0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee"
 }

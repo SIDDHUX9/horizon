@@ -710,18 +710,24 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
           {lastProofTrace.tx_hash && (
             <div className="p-4 rounded-xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="text-[#707e8c]">On-Chain Tx Hash:</span>
+                <span className="text-[#707e8c]">{lastProofTrace.onchain_confirmed ? 'On-Chain Tx Hash:' : 'ZK Proof Digest:'}</span>
                 <span className="text-[#11161a] font-bold break-all">{lastProofTrace.tx_hash}</span>
               </div>
-              <a
-                href={`https://preview.midnightexplorer.com/transactions/${lastProofTrace.tx_hash}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-[#11161a] hover:underline flex items-center gap-1 font-sans shrink-0 font-semibold"
-              >
-                <span>View on Explorer</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
+              {lastProofTrace.onchain_confirmed ? (
+                <a
+                  href={`https://preview.midnightexplorer.com/transactions/${lastProofTrace.tx_hash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-emerald-800 hover:underline flex items-center gap-1 font-sans shrink-0 font-semibold"
+                >
+                  <span>View on Explorer</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </a>
+              ) : (
+                <span className="text-[11px] text-[#525f6c] bg-[#f5f5f0] border border-[#eaeae5] px-2.5 py-1 rounded-full font-sans shrink-0">
+                  Verified Local Proof (Port 6300)
+                </span>
+              )}
             </div>
           )}
         </div>

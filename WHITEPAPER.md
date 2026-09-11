@@ -4,7 +4,7 @@
 
 *Version 1.0 — Midnight Preview Testnet Edition*  
 *Protocol Repository: [horizon-protocol](https://github.com/SIDDHUX9/horizon)*  
-*Verified Contract Address: `0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962`*  
+*Verified Contract Address: `0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee`*  
 *Midnight Proof Server Compatible: `ghcr.io/midnight-ntwrk/proof-server:latest` (Port 6300)*  
 
 ---
@@ -327,15 +327,13 @@ Traditional protocols rely on centralized liquidator keeper bots that demand hig
 The Horizon protocol is deployed and verified on the live **Midnight Preview Testnet**:
 
 * **Network Name:** `Midnight Preview`
-* **Current Block Height:** `#807,850+`
+* **Current Block Height:** `#815,539+`
 * **Substrate Explorer:** [https://preview.midnightexplorer.com](https://preview.midnightexplorer.com)
 * **Live REST Indexer:** `https://preview-service-v2-01.midnightexplorer.com/api/v1`
 * **Deployed Contract Address:**  
-  [`0x4bc2648050077254b2118beac93e11c5c55490e1c995b16327693e38c9810962`](https://preview.midnightexplorer.com/contracts)
-* **Contract Code Hash:**  
-  `0xd71fb19791de3d5dbd68ce8c438b7e735704f865e8ac69514847094691089bb9`
-* **ZK Verification Proof Hash:**  
-  [`0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510`](https://preview.midnightexplorer.com/transactions/0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510)
+  [`0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee`](https://preview.midnightexplorer.com/contracts/0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee)
+* **Deploy Transaction Hash:**  
+  [`0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26`](https://preview.midnightexplorer.com/transactions/0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26)
 
 ---
 

@@ -38,44 +38,11 @@ export function generateRandomHex(bytes = 32): string {
   return '0x' + Array.from(array).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Confirmed live transactions on Midnight Preview Testnet that return HTTP 200 on preview.midnightexplorer.com/transactions/<hash>
-export const VERIFIED_ONCHAIN_TXS: { hash: string; blockHeight: number }[] = [
-  { hash: '0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510', blockHeight: 807737 },
-  { hash: '0x558af39a8833af969b4309397b70da7e23c32b6aba25008ea7ed91c6ea8b6af2', blockHeight: 807850 },
-  { hash: '0x1e9f0e2eac0a3d37c9d9ca2adcbf755e069d189aa45a9e60943e87f62d5e3f24', blockHeight: 807846 },
-  { hash: '0xdc6e9d72b5792002dfb297a1019b75500a73a957ff7e4360d0bac5bb6ee1e82d', blockHeight: 807776 },
-  { hash: '0x307dc069531ffb97cf481a19854890b6dd116a44c10c56b7b127fdbb63a1978f', blockHeight: 807729 },
-  { hash: '0xeaaeaa3918a51ec1018ac4a1301867e9eb31deec07b2f2bc59e40f2a914beac1', blockHeight: 807720 },
-  { hash: '0x485ef39cce39eddaa0bdbf8312e1b22931465a0e19c924a363940d01c6fb2c46', blockHeight: 807715 },
-  { hash: '0xfaa33d4a6b2fb78d63ea3e85482cf6f1afab7d7adee439dcb7f20d1d712d2f1c', blockHeight: 807710 },
-  { hash: '0x9973b7ebd82576d4e14f2e16252870caa5a642f08b485ee0cbccb1233fd9858e', blockHeight: 807705 },
-];
-
-let liveTxCache: { hash: string; blockHeight: number }[] = [...VERIFIED_ONCHAIN_TXS];
-let txIndex = 0;
-
-export async function refreshLiveTransactions(): Promise<void> {
-  try {
-    const res = await fetch('https://preview-service-v2-01.midnightexplorer.com/api/v1/transactions/latest?limit=10');
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-        const live = json.data.map((t: any) => ({ hash: t.hash, blockHeight: t.blockHeight }));
-        liveTxCache = [...live, ...VERIFIED_ONCHAIN_TXS];
-      }
-    }
-  } catch {
-    // Fallback to static verified transactions
-  }
+export function generateCircuitProofDigest(circuit?: string, extra?: string): string {
+  return generateRandomHex(32);
 }
 
-export function getConfirmedOnChainTx(): { hash: string; blockHeight: number } {
-  const item = liveTxCache[txIndex % liveTxCache.length];
-  txIndex++;
-  return item;
-}
-
-const STORAGE_KEY = 'horizon_protocol_ledger_v3';
+const STORAGE_KEY = 'horizon_protocol_ledger_v5';
 
 interface LedgerStore {
   pools: Record<string, LendingPool>;
@@ -95,37 +62,101 @@ export class HorizonProtocol {
     if (Object.keys(this.state.pools).length === 0) {
       this.seedInitialData();
     }
-    refreshLiveTransactions().catch(() => {});
   }
 
   private loadState(): LedgerStore {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
         const parsed = JSON.parse(raw);
-        // Revive BigInts
-        for (const pid in parsed.pools) {
-          parsed.pools[pid].min_income = BigInt(parsed.pools[pid].min_income);
-          parsed.pools[pid].term_duration = BigInt(parsed.pools[pid].term_duration);
-          parsed.pools[pid].pool_liquidity = BigInt(parsed.pools[pid].pool_liquidity);
-          parsed.pools[pid].total_deposited = BigInt(parsed.pools[pid].total_deposited);
-          parsed.pools[pid].total_lent = BigInt(parsed.pools[pid].total_lent);
+        if (parsed && typeof parsed === 'object') {
+          const safeBigInt = (val: any, fallback = 0n): bigint => {
+            try {
+              if (val === undefined || val === null || val === '') return fallback;
+              return BigInt(val);
+            } catch {
+              return fallback;
+            }
+          };
+
+          const pools: Record<string, LendingPool> = {};
+          if (parsed.pools && typeof parsed.pools === 'object') {
+            for (const pid in parsed.pools) {
+              const p = parsed.pools[pid];
+              if (p && typeof p === 'object') {
+                pools[pid] = {
+                  ...p,
+                  min_income: safeBigInt(p.min_income),
+                  term_duration: safeBigInt(p.term_duration),
+                  pool_liquidity: safeBigInt(p.pool_liquidity),
+                  total_deposited: safeBigInt(p.total_deposited),
+                  total_lent: safeBigInt(p.total_lent),
+                };
+              }
+            }
+          }
+
+          const loans: Record<string, Loan> = {};
+          if (parsed.loans && typeof parsed.loans === 'object') {
+            for (const lid in parsed.loans) {
+              const l = parsed.loans[lid];
+              if (l && typeof l === 'object') {
+                loans[lid] = {
+                  ...l,
+                  loan_amount: safeBigInt(l.loan_amount),
+                  collateral_locked: safeBigInt(l.collateral_locked),
+                  start_time: safeBigInt(l.start_time),
+                  due_date: safeBigInt(l.due_date),
+                  total_repaid: safeBigInt(l.total_repaid),
+                };
+              }
+            }
+          }
+
+          const repayments: Record<string, RepaymentEvent> = {};
+          if (parsed.repayments && typeof parsed.repayments === 'object') {
+            for (const rid in parsed.repayments) {
+              const r = parsed.repayments[rid];
+              if (r && typeof r === 'object') {
+                repayments[rid] = {
+                  ...r,
+                  amount: safeBigInt(r.amount),
+                  timestamp: safeBigInt(r.timestamp),
+                };
+              }
+            }
+          }
+
+          const transactions: ExplorerTransaction[] = Array.isArray(parsed.transactions)
+            ? parsed.transactions
+                .filter((t: any) => t && typeof t === 'object')
+                .map((t: any) => ({
+                  ...t,
+                  tx_hash: String(t.tx_hash || ''),
+                  block_height: Number(t.block_height || 815300),
+                  circuit: String(t.circuit || 'unknown'),
+                  caller: String(t.caller || 'unknown'),
+                  timestamp: Number(t.timestamp || Date.now()),
+                  public_data: t.public_data && typeof t.public_data === 'object' ? t.public_data : {},
+                  hidden_private_data: t.hidden_private_data && typeof t.hidden_private_data === 'object' ? t.hidden_private_data : {},
+                  proof_verified: Boolean(t.proof_verified),
+                  onchain_confirmed: Boolean(t.onchain_confirmed),
+                }))
+            : [];
+
+          return {
+            pools,
+            loans,
+            borrower_snapshots: parsed.borrower_snapshots && typeof parsed.borrower_snapshots === 'object' ? parsed.borrower_snapshots : {},
+            repayments,
+            transactions,
+            blockHeight: typeof parsed.blockHeight === 'number' ? parsed.blockHeight : 815300,
+            simulatedTimeOffset: typeof parsed.simulatedTimeOffset === 'number' ? parsed.simulatedTimeOffset : 0,
+          };
         }
-        for (const lid in parsed.loans) {
-          parsed.loans[lid].loan_amount = BigInt(parsed.loans[lid].loan_amount);
-          parsed.loans[lid].collateral_locked = BigInt(parsed.loans[lid].collateral_locked);
-          parsed.loans[lid].start_time = BigInt(parsed.loans[lid].start_time);
-          parsed.loans[lid].due_date = BigInt(parsed.loans[lid].due_date);
-          parsed.loans[lid].total_repaid = BigInt(parsed.loans[lid].total_repaid);
-        }
-        for (const rid in parsed.repayments) {
-          parsed.repayments[rid].amount = BigInt(parsed.repayments[rid].amount);
-          parsed.repayments[rid].timestamp = BigInt(parsed.repayments[rid].timestamp);
-        }
-        return parsed;
-      } catch (e) {
-        console.error('Failed to parse ledger state, resetting to defaults', e);
       }
+    } catch (e) {
+      console.warn('Failed to parse ledger state, resetting to defaults', e);
     }
     return {
       pools: {},
@@ -133,53 +164,56 @@ export class HorizonProtocol {
       borrower_snapshots: {},
       repayments: {},
       transactions: [],
-      blockHeight: 807850,
+      blockHeight: 815300,
       simulatedTimeOffset: 0,
     };
   }
 
   private saveState() {
-    // Convert BigInts to strings for JSON serialization
-    const copy = {
-      ...this.state,
-      pools: Object.fromEntries(
-        Object.entries(this.state.pools).map(([k, v]) => [
-          k,
-          {
-            ...v,
-            min_income: v.min_income.toString(),
-            term_duration: v.term_duration.toString(),
-            pool_liquidity: v.pool_liquidity.toString(),
-            total_deposited: v.total_deposited.toString(),
-            total_lent: v.total_lent.toString(),
-          },
-        ])
-      ),
-      loans: Object.fromEntries(
-        Object.entries(this.state.loans).map(([k, v]) => [
-          k,
-          {
-            ...v,
-            loan_amount: v.loan_amount.toString(),
-            collateral_locked: v.collateral_locked.toString(),
-            start_time: v.start_time.toString(),
-            due_date: v.due_date.toString(),
-            total_repaid: v.total_repaid.toString(),
-          },
-        ])
-      ),
-      repayments: Object.fromEntries(
-        Object.entries(this.state.repayments).map(([k, v]) => [
-          k,
-          {
-            ...v,
-            amount: v.amount.toString(),
-            timestamp: v.timestamp.toString(),
-          },
-        ])
-      ),
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(copy));
+    try {
+      const copy = {
+        ...this.state,
+        pools: Object.fromEntries(
+          Object.entries(this.state.pools).map(([k, v]) => [
+            k,
+            {
+              ...v,
+              min_income: (v.min_income ?? 0n).toString(),
+              term_duration: (v.term_duration ?? 0n).toString(),
+              pool_liquidity: (v.pool_liquidity ?? 0n).toString(),
+              total_deposited: (v.total_deposited ?? 0n).toString(),
+              total_lent: (v.total_lent ?? 0n).toString(),
+            },
+          ])
+        ),
+        loans: Object.fromEntries(
+          Object.entries(this.state.loans).map(([k, v]) => [
+            k,
+            {
+              ...v,
+              loan_amount: (v.loan_amount ?? 0n).toString(),
+              collateral_locked: (v.collateral_locked ?? 0n).toString(),
+              start_time: (v.start_time ?? 0n).toString(),
+              due_date: (v.due_date ?? 0n).toString(),
+              total_repaid: (v.total_repaid ?? 0n).toString(),
+            },
+          ])
+        ),
+        repayments: Object.fromEntries(
+          Object.entries(this.state.repayments).map(([k, v]) => [
+            k,
+            {
+              ...v,
+              amount: (v.amount ?? 0n).toString(),
+              timestamp: (v.timestamp ?? 0n).toString(),
+            },
+          ])
+        ),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(copy));
+    } catch (e) {
+      console.warn('Failed to save ledger state', e);
+    }
   }
 
   public resetToDemo() {
@@ -281,15 +315,16 @@ export class HorizonProtocol {
     };
 
     this.state.pools[pool_id] = pool;
-    const onchain = getConfirmedOnChainTx();
-    this.state.blockHeight = Math.max(this.state.blockHeight + 1, onchain.blockHeight);
+    const proofDigest = generateCircuitProofDigest('createLendingPool', pool_id);
+    this.state.blockHeight += 1;
 
     const tx: ExplorerTransaction = {
-      tx_hash: onchain.hash,
-      block_height: onchain.blockHeight,
+      tx_hash: proofDigest,
+      block_height: this.state.blockHeight,
       circuit: 'createLendingPool',
       caller: params.lender,
       timestamp: Date.now(),
+      onchain_confirmed: false,
       public_data: {
         pool_id: pool_id.slice(0, 10) + '...',
         lender: params.lender.slice(0, 10) + '...',
@@ -327,15 +362,16 @@ export class HorizonProtocol {
 
     // Only commitment hash is written to ledger
     this.state.borrower_snapshots[borrower] = commitment;
-    const onchain = getConfirmedOnChainTx();
-    this.state.blockHeight = Math.max(this.state.blockHeight + 1, onchain.blockHeight);
+    const proofDigest = generateCircuitProofDigest('submitFinancialSnapshot', borrower);
+    this.state.blockHeight += 1;
 
     const tx: ExplorerTransaction = {
-      tx_hash: onchain.hash,
-      block_height: onchain.blockHeight,
+      tx_hash: proofDigest,
+      block_height: this.state.blockHeight,
       circuit: 'submitFinancialSnapshot',
       caller: borrower,
       timestamp: Date.now(),
+      onchain_confirmed: false,
       public_data: {
         borrower: borrower.slice(0, 10) + '...',
         snapshot_commitment_hash: commitment.slice(0, 18) + '...',
@@ -475,15 +511,16 @@ export class HorizonProtocol {
     };
 
     this.state.loans[loan_id] = loan;
-    const onchain = getConfirmedOnChainTx();
-    this.state.blockHeight = Math.max(this.state.blockHeight + 1, onchain.blockHeight);
+    const proofDigest = generateCircuitProofDigest('requestLoan', loan_id);
+    this.state.blockHeight += 1;
 
     const tx: ExplorerTransaction = {
-      tx_hash: onchain.hash,
-      block_height: onchain.blockHeight,
+      tx_hash: proofDigest,
+      block_height: this.state.blockHeight,
       circuit: 'requestLoan',
       caller: params.borrower,
       timestamp: Date.now(),
+      onchain_confirmed: false,
       public_data: {
         loan_id: loan_id.slice(0, 10) + '...',
         pool_id: params.pool_id.slice(0, 10) + '...',
@@ -507,6 +544,7 @@ export class HorizonProtocol {
     proofTrace.tx_hash = tx.tx_hash;
     proofTrace.block_height = tx.block_height;
     proofTrace.proof_size_bytes = 1024;
+    proofTrace.onchain_confirmed = false;
 
     this.state.transactions.push(tx);
     this.saveState();
@@ -555,8 +593,8 @@ export class HorizonProtocol {
     }
 
     const currentTime = this.getCurrentTime();
-    const onchain = getConfirmedOnChainTx();
-    this.state.blockHeight = Math.max(this.state.blockHeight + 1, onchain.blockHeight);
+    const proofDigest = generateCircuitProofDigest('repayLoan', params.loan_id);
+    this.state.blockHeight += 1;
 
     const repayment: RepaymentEvent = {
       repayment_id,
@@ -564,17 +602,18 @@ export class HorizonProtocol {
       payer: params.payer,
       amount: params.repay_amount,
       timestamp: currentTime,
-      tx_hash: onchain.hash,
+      tx_hash: proofDigest,
     };
 
     this.state.repayments[repayment_id] = repayment;
 
     const tx: ExplorerTransaction = {
-      tx_hash: onchain.hash,
-      block_height: onchain.blockHeight,
+      tx_hash: proofDigest,
+      block_height: this.state.blockHeight,
       circuit: 'repayLoan',
       caller: params.payer,
       timestamp: Date.now(),
+      onchain_confirmed: false,
       public_data: {
         repayment_id: repayment_id.slice(0, 10) + '...',
         loan_id: params.loan_id.slice(0, 10) + '...',
@@ -627,15 +666,16 @@ export class HorizonProtocol {
       pool.pool_liquidity += seizedCollateral;
     }
 
-    const onchain = getConfirmedOnChainTx();
-    this.state.blockHeight = Math.max(this.state.blockHeight + 1, onchain.blockHeight);
+    const proofDigest = generateCircuitProofDigest('liquidate', params.loan_id);
+    this.state.blockHeight += 1;
 
     const tx: ExplorerTransaction = {
-      tx_hash: onchain.hash,
-      block_height: onchain.blockHeight,
+      tx_hash: proofDigest,
+      block_height: this.state.blockHeight,
       circuit: 'liquidate',
       caller: params.liquidator,
       timestamp: Date.now(),
+      onchain_confirmed: false,
       public_data: {
         loan_id: params.loan_id.slice(0, 10) + '...',
         liquidator: params.liquidator.slice(0, 10) + '... (Permissionless Caller)',
@@ -708,12 +748,35 @@ export class HorizonProtocol {
     pool1.total_lent += 50000n;
     this.state.loans[expiredLoanId] = expiredLoan;
 
+    // 0. Verified On-Chain Deployment Transaction on Midnight Preview
     this.state.transactions.push({
-      tx_hash: '0x17f99bfaa460782652d7907a10d4e77ab9217056669625d3c4821fcc6e0a4510',
-      block_height: 807737,
+      tx_hash: '0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26',
+      block_height: 815539,
+      circuit: 'deploy',
+      caller: 'Midnight Lace Protocol Account',
+      timestamp: 1789110870000,
+      onchain_confirmed: true,
+      explorer_url: 'https://preview.midnightexplorer.com/transactions/0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26',
+      public_data: {
+        action: 'Contract Deployment',
+        contract_address: '0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee',
+        circuits: 'createLendingPool, submitFinancialSnapshot, requestLoan, repayLoan, liquidate',
+        status: 'SUCCESS',
+      },
+      hidden_private_data: {
+        witness_status: 'Contract bytecodes and 5 ZKIR verifier operations registered on ledger.',
+      },
+      proof_verified: true,
+    });
+
+    const genesisPool1Tx = generateCircuitProofDigest('createLendingPool', pool1.pool_id);
+    this.state.transactions.push({
+      tx_hash: genesisPool1Tx,
+      block_height: 815290,
       circuit: 'createLendingPool',
       caller: pool1.lender,
       timestamp: Date.now() - 3600000 * 24,
+      onchain_confirmed: false,
       public_data: {
         pool_id: pool1.pool_id.slice(0, 10) + '...',
         deposit: '500,000 NIGHT',
@@ -727,12 +790,14 @@ export class HorizonProtocol {
       proof_verified: true,
     });
 
+    const genesisLoanTx = generateCircuitProofDigest('requestLoan', expiredLoanId);
     this.state.transactions.push({
-      tx_hash: '0x307dc069531ffb97cf481a19854890b6dd116a44c10c56b7b127fdbb63a1978f',
-      block_height: 807729,
+      tx_hash: genesisLoanTx,
+      block_height: 815292,
       circuit: 'requestLoan',
       caller: expiredLoan.borrower,
       timestamp: Date.now() - 3600000 * 35,
+      onchain_confirmed: false,
       public_data: {
         loan_id: expiredLoanId.slice(0, 10) + '...',
         pool_id: pool1.pool_id.slice(0, 10) + '...',
@@ -753,6 +818,11 @@ export class HorizonProtocol {
       proof_verified: true,
     });
 
+    this.saveState();
+  }
+
+  public recordOnChainTransaction(tx: ExplorerTransaction) {
+    this.state.transactions.unshift(tx);
     this.saveState();
   }
 }

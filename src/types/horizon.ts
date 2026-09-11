@@ -72,6 +72,8 @@ export interface ZKProofTrace {
   duration_ms?: number;
   tx_hash?: string;
   block_height?: number;
+  onchain_confirmed?: boolean;
+  explorer_url?: string;
 }
 
 export interface ExplorerTransaction {
@@ -83,4 +85,7 @@ export interface ExplorerTransaction {
   public_data: Record<string, string | number | boolean>;
   hidden_private_data: Record<string, string>;
   proof_verified: boolean;
+  onchain_confirmed?: boolean;
+  explorer_url?: string;
 }
+
