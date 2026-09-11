@@ -169,7 +169,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
               <span>Block #{blockHeight}</span>
             </a>
             <a
-              href="https://preview.midnightexplorer.com/contracts"
+              href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
               target="_blank"
               rel="noreferrer"
               className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#11161a] hover:border-[#11161a] transition-colors"
