@@ -368,11 +368,11 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
             </div>
 
             {/* Center Column: Dual Cards (Private vs Public) */}
-            <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="lg:col-span-8 xl:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {/* Card 1: PRIVATE */}
-              <div className="bg-[#f3f2ee] rounded-2xl p-7 border border-[#e6e5df] flex flex-col justify-between min-h-[320px]">
+              <div className="bg-[#f3f2ee] rounded-2xl p-5 sm:p-6 border border-[#e6e5df] flex flex-col justify-between min-h-[300px]">
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-sans font-bold tracking-[0.22em] text-[#4b5563] uppercase mb-6">
+                  <div className="flex items-center gap-2 text-xs font-sans font-bold tracking-[0.22em] text-[#4b5563] uppercase mb-5">
                     <svg className="w-4 h-4 text-[#4b5563]" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fillRule="evenodd"
@@ -383,48 +383,48 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
                     <span>PRIVATE</span>
                   </div>
 
-                  <div className="space-y-4 text-sm sm:text-base">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#374151] font-medium">Annual income</span>
-                      <div className="flex gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
+                  <div className="space-y-3.5 text-xs sm:text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#374151] font-medium whitespace-nowrap">Annual income</span>
+                      <div className="flex gap-1.5 shrink-0">
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#374151] font-medium">Existing debt</span>
-                      <div className="flex gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#374151] font-medium whitespace-nowrap">Existing debt</span>
+                      <div className="flex gap-1.5 shrink-0">
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#374151] font-medium">Debt-to-income</span>
-                      <div className="flex gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#374151] font-medium whitespace-nowrap">Debt-to-income</span>
+                      <div className="flex gap-1.5 shrink-0">
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#374151] font-medium">Credit score</span>
-                      <div className="flex gap-1.5">
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
-                        <span className="w-3.5 h-3.5 rounded bg-[#cfcec8]" />
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#374151] font-medium whitespace-nowrap">Credit score</span>
+                      <div className="flex gap-1.5 shrink-0">
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
+                        <span className="w-3 h-3 rounded bg-[#cfcec8]" />
                       </div>
                     </div>
                   </div>
@@ -432,9 +432,9 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
               </div>
 
               {/* Card 2: PUBLIC */}
-              <div className="bg-white rounded-2xl p-7 border border-[#e6e5df] shadow-md flex flex-col justify-between min-h-[320px]">
+              <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#e6e5df] shadow-md flex flex-col justify-between min-h-[300px]">
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-sans font-bold tracking-[0.22em] text-[#4b5563] uppercase mb-3">
+                  <div className="flex items-center gap-2 text-xs font-sans font-bold tracking-[0.22em] text-[#4b5563] uppercase mb-2">
                     <svg className="w-4 h-4 text-[#4b5563]" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                       <path
@@ -447,9 +447,9 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
                   </div>
 
                   {/* Qualified Circle Badge */}
-                  <div className="flex flex-col items-center justify-center my-3">
-                    <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 shadow-sm">
-                      <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <div className="flex flex-col items-center justify-center my-2.5">
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1 shadow-sm">
+                      <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                         <path
                           fillRule="evenodd"
                           d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -457,31 +457,31 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
                         />
                       </svg>
                     </div>
-                    <span className="text-xs font-sans font-bold tracking-[0.22em] text-[#11161a] uppercase">
+                    <span className="text-[11px] font-sans font-bold tracking-[0.22em] text-[#11161a] uppercase">
                       QUALIFIED
                     </span>
                   </div>
 
-                  <div className="space-y-3 text-sm sm:text-base">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#4b5563]">Loan amount</span>
-                      <span className="font-semibold text-[#11161a]">5,000 NIGHT</span>
+                  <div className="space-y-2.5 text-xs sm:text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#4b5563] whitespace-nowrap">Loan amount</span>
+                      <span className="font-semibold text-[#11161a] whitespace-nowrap">5,000 NIGHT</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#4b5563]">Interest rate</span>
-                      <span className="font-semibold text-[#11161a]">8.5%</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#4b5563] whitespace-nowrap">Interest rate</span>
+                      <span className="font-semibold text-[#11161a] whitespace-nowrap">8.5%</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#4b5563]">Term</span>
-                      <span className="font-semibold text-[#11161a]">90 days</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#4b5563] whitespace-nowrap">Term</span>
+                      <span className="font-semibold text-[#11161a] whitespace-nowrap">90 days</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#4b5563]">Status</span>
-                      <span className="font-semibold text-emerald-700">Active</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#4b5563] whitespace-nowrap">Status</span>
+                      <span className="font-semibold text-emerald-700 whitespace-nowrap">Active</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#4b5563]">Collateral</span>
-                      <span className="font-semibold text-[#11161a]">7,500 NIGHT</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#4b5563] whitespace-nowrap">Collateral</span>
+                      <span className="font-semibold text-[#11161a] whitespace-nowrap">7,500 NIGHT</span>
                     </div>
                   </div>
                 </div>
@@ -489,7 +489,7 @@ export const EditorialLandingPage: React.FC<EditorialLandingPageProps> = ({
             </div>
 
             {/* Right Column: Editorial Quote */}
-            <div className="lg:col-span-3 lg:pl-8">
+            <div className="lg:col-span-12 xl:col-span-3 lg:pt-6 xl:pt-0 xl:pl-6">
               <blockquote className="font-serif italic text-2xl sm:text-3xl lg:text-[2.25rem] text-[#1f2937] leading-[1.3]">
                 “Privacy is a foundation for a more inclusive financial system.”
               </blockquote>
