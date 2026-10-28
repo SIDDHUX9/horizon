@@ -1,4 +1,6 @@
 # H O R I Z O N
+<img width="1607" height="985" alt="image" src="https://github.com/user-attachments/assets/b461ad75-ddf5-4e19-8d99-a8cab536d3ba" />
+
 
 > **Zero-Knowledge Private Credit & Risk Underwriting Protocol on Midnight Network**  
 > *Prove you qualify for a loan without ever revealing your income, debt obligations, or financial numbers.*
