@@ -82,7 +82,7 @@ export const PrivateStatePasswordModal: React.FC<PrivateStatePasswordModalProps>
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-[#707e8c]">
           This password encrypts the browser-local witness store. It is held in memory only for the
-          current session and is never sent to the UI, an API, or a log.
+          current session and is never sent to a server, API, or log.
         </p>
 
         {errorMessage && (
