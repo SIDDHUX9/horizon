@@ -29,6 +29,7 @@ import { ExplorerTransaction, Loan, LendingPool, RepaymentEvent, LoanStatus } fr
 import { formatNight, formatBps } from '../contracts/horizonSimulator';
 import { LaceConnectedSession } from '../services/laceWallet';
 import { HorizonDeployer, DeploymentRecord, DeployStep } from '../services/horizonDeployer';
+import { RuntimeMode } from '../services/runtimeMode';
 
 interface TransparencyExplorerProps {
   transactions: ExplorerTransaction[];
@@ -38,6 +39,7 @@ interface TransparencyExplorerProps {
   repayments: RepaymentEvent[];
   laceSession?: LaceConnectedSession | null;
   onOpenWalletModal?: () => void;
+  runtimeMode: RuntimeMode;
 }
 
 export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
@@ -48,6 +50,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
   repayments,
   laceSession,
   onOpenWalletModal,
+  runtimeMode,
 }) => {
   const [filterCircuit, setFilterCircuit] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -60,6 +63,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
   const [deployMessage, setDeployMessage] = useState<string>('');
   const [deployError, setDeployError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
+  const showDevDeployment = runtimeMode === 'demo' && import.meta.env.DEV;
 
   useEffect(() => {
     const checkServer = async () => {
@@ -73,6 +77,10 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
   }, []);
 
   const handleStartDeployment = async () => {
+    if (!showDevDeployment) {
+      setDeployError('Deployment tooling is unavailable in production builds.');
+      return;
+    }
     if (!laceSession) {
       if (onOpenWalletModal) {
         onOpenWalletModal();
@@ -214,23 +222,25 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
-            <button
-              onClick={handleStartDeployment}
-              disabled={isDeploying}
-              className="px-4 py-2 rounded-xl bg-[#11161a] hover:bg-black text-white font-sans text-xs font-bold inline-flex items-center gap-2 shadow-sm transition disabled:opacity-50 cursor-pointer"
-            >
-              {isDeploying ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />
-                  <span>Deploying to Testnet...</span>
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Prepare Deployment (Dev Only)</span>
-                </>
-              )}
-            </button>
+            {showDevDeployment && (
+              <button
+                onClick={handleStartDeployment}
+                disabled={isDeploying}
+                className="px-4 py-2 rounded-xl bg-[#11161a] hover:bg-black text-white font-sans text-xs font-bold inline-flex items-center gap-2 shadow-sm transition disabled:opacity-50 cursor-pointer"
+              >
+                {isDeploying ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />
+                    <span>Deploying to Testnet...</span>
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Prepare Deployment (Dev Only)</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 

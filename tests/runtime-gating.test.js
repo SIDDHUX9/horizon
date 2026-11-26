@@ -40,3 +40,14 @@ test('production client connection is deployment-gated and password-protected', 
   assert.ok(app.includes('<PrivateStatePasswordModal'));
   assert.ok(app.includes('<ProtocolOfflinePanel'));
 });
+
+test('explorer hides simulator rows and dev deployment controls in production', () => {
+  const app = read('src/App.tsx');
+  const explorer = read('src/components/TransparencyExplorer.tsx');
+  for (const value of ['transactions', 'loans', 'pools', 'repayments']) {
+    assert.ok(app.includes(`runtimeMode === 'demo' ? ${value} : []`));
+  }
+  assert.ok(app.includes('runtimeMode={runtimeMode}'));
+  assert.ok(explorer.includes("runtimeMode === 'demo' && import.meta.env.DEV"));
+  assert.ok(explorer.includes("{showDevDeployment && ("));
+});

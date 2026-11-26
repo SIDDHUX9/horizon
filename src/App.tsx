@@ -795,13 +795,14 @@ export const App: React.FC = () => {
 
           {activeTab === 'explorer' && (
             <TransparencyExplorer
-              transactions={transactions}
+              transactions={runtimeMode === 'demo' ? transactions : []}
               blockHeight={blockHeight}
-              loans={loans}
-              pools={pools}
-              repayments={repayments}
+              loans={runtimeMode === 'demo' ? loans : []}
+              pools={runtimeMode === 'demo' ? pools : []}
+              repayments={runtimeMode === 'demo' ? repayments : []}
               laceSession={laceSession}
               onOpenWalletModal={() => setWalletModalOpen(true)}
+              runtimeMode={runtimeMode}
             />
           )}
 
