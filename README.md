@@ -6,7 +6,7 @@
 
 [![Midnight Preview](https://img.shields.io/badge/Network-Midnight%20Preview-blue.svg)](https://preview.midnightexplorer.com)
 [![Status](https://img.shields.io/badge/Status-Prototype%20%2F%20Demo-orange.svg)](#implementation-status)
-[![Compact Compiler](https://img.shields.io/badge/Compact%20Compiler-v0.34.0-emerald.svg)](https://github.com/midnight-ntwrk)
+[![Compact Compiler](https://img.shields.io/badge/Compact%20Compiler-v0.36.1-emerald.svg)](https://github.com/midnightntwrk/compact)
 [![Proof Server](https://img.shields.io/badge/Proof%20Server-Docker%20:6300-purple.svg)](https://ghcr.io/midnight-ntwrk/proof-server)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org)
@@ -104,8 +104,8 @@ Known contract-level gaps are documented in `wave2.md`, including caller-supplie
 
 ### Prerequisites
 
-* Node.js 20+
-* Docker Desktop (optional; needed for local proof-server experiments)
+* Node.js 22.12 or later (required by Midnight.js 5)
+* Docker Desktop (optional; needed for local proof-server experiments with proof server 9.0.2)
 * A Midnight-compatible wallet for real network work
 
 ### Install
@@ -116,13 +116,15 @@ cd horizon
 npm install
 ```
 
-### Compile-check the contract
+### Verify the compiled contract stack
 
 ```bash
-npm run compile:compact
+npm run verify:artifacts
 ```
 
-This performs a portable compile check and preserves the committed proving keys. It does not overwrite the canonical artifacts unless a complete key set is regenerated.
+This checks the `compactc` 0.36.1 manifest, all artifact hashes, and the runtime 0.21.0 binding. A mismatch fails closed.
+
+To recompile, install Compact toolchain 0.36.1 and run `npm run compile:compact`. The script preserves committed proving keys unless a complete key set is regenerated.
 
 ### Run the demo UI
 
@@ -144,10 +146,10 @@ The command exits non-zero if a claimed address or transaction cannot be found o
 
 ```bash
 docker compose up -d horizon-proof-server
-curl http://127.0.0.1:6300/
+npm run preflight:proof
 ```
 
-The existing proof scripts call a real proof server but currently prove empty transactions; they do **not** yet prove Horizon circuit calls.
+The preflight checks artifact integrity and proof-server reachability. It does **not** prove a Horizon circuit or submit a transaction.
 
 ---
 
@@ -187,10 +189,10 @@ src/
   services/                  Wallet, deployer, and live indexer clients
 scripts/
   compile-compact.js         Portable compile check
+  verify-artifacts.js        Fail-closed manifest/hash verification
   verify-deployment.js       Live deployment verification
-  deploy-midnight.js         Local deploy preparation (not a broadcast)
-  generate-real-proof.js     Proof-server connectivity probe
-  execute-lifecycle.js       Simulated lifecycle probe
+  preflight-proof-server.js  Artifact + proof-server reachability check
+  deploy-midnight.js         Deployment preflight (not a broadcast)
 ```
 
 ---

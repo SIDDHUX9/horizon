@@ -471,7 +471,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
               5. Proof Server Integration Status
             </h2>
             <p>
-              The repository includes compiled Compact artifacts and Docker configuration for the official proof server. The browser workflow currently animates proof progress locally; it does not call a proof server or generate a circuit proof. Existing scripts such as <code>npm run prove:real</code> are connectivity probes that prove an empty transaction, not a Horizon circuit call.
+              The repository includes compiled Compact artifacts and Docker configuration for the official proof server. The browser workflow currently animates proof progress locally; it does not call a proof server or generate a circuit proof. <code>npm run preflight:proof</code> checks artifact integrity and proof-server reachability; it does not fabricate a proof.
             </p>
             <div className="p-4 rounded-xl bg-[#11161a] text-slate-200 font-mono text-xs overflow-x-auto space-y-1">
               <div className="text-slate-400"># Start a local proof server (optional)</div>

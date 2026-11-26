@@ -213,7 +213,7 @@ The official proof server image is:
 docker compose up -d horizon-proof-server
 ```
 
-A proof server is required for real proving. Existing scripts such as `npm run prove:real` currently prove an empty transaction as a connectivity probe. They do not prove a Horizon circuit call and must not be described as circuit proofs.
+A proof server is required for real proving. The repository now provides `npm run preflight:proof` to check artifact integrity and proof-server reachability. It deliberately does not prove a Horizon circuit or fabricate a proof hash.
 
 ### 5.3 Benchmarks
 

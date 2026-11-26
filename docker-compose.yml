@@ -1,7 +1,7 @@
 services:
   # Official Midnight Zero-Knowledge Proof Server (local development only)
   horizon-proof-server:
-    image: ghcr.io/midnight-ntwrk/proof-server:latest
+    image: ghcr.io/midnight-ntwrk/proof-server:9.0.2
     container_name: horizon-proof-server
     ports:
       - "6300:6300"
