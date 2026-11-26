@@ -176,13 +176,15 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
             <span className="text-[#525f6c] font-sans font-medium">Active Protocol Loans:</span>
             <span className="text-[#553c9a] font-bold">{loanList.length}</span>
           </div>
-          <div className="p-3 rounded-2xl bg-white/95 backdrop-blur-sm border border-[#e2e2dc] shadow-sm flex items-center gap-2">
-            <span className="text-[#525f6c] font-sans font-medium">Proof Server:</span>
-            <span className={`font-bold flex items-center gap-1.5 font-sans ${proofServerOnline ? 'text-emerald-700' : 'text-[#525f6c]'}`}>
-              <span className={`w-2 h-2 rounded-full ${proofServerOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-              {proofServerOnline ? 'ONLINE (PORT 6300)' : 'STANDBY / LOCAL'}
-            </span>
-          </div>
+          {showDevDeployment && (
+            <div className="p-3 rounded-2xl bg-white/95 backdrop-blur-sm border border-[#e2e2dc] shadow-sm flex items-center gap-2">
+              <span className="text-[#525f6c] font-sans font-medium">Proof Server:</span>
+              <span className={`font-bold flex items-center gap-1.5 font-sans ${proofServerOnline ? 'text-emerald-700' : 'text-[#525f6c]'}`}>
+                <span className={`w-2 h-2 rounded-full ${proofServerOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                {proofServerOnline ? 'ONLINE (PORT 6300)' : 'STANDBY / LOCAL'}
+              </span>
+            </div>
+          )}
           {laceSession && (
             <div className="p-3 rounded-2xl bg-white/95 backdrop-blur-sm border border-[#e2e2dc] shadow-sm flex items-center gap-2">
               <span className="text-[#525f6c] font-sans font-medium">Lace tDUST Gas:</span>

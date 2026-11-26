@@ -50,4 +50,5 @@ test('explorer hides simulator rows and dev deployment controls in production', 
   assert.ok(app.includes('runtimeMode={runtimeMode}'));
   assert.ok(explorer.includes("runtimeMode === 'demo' && import.meta.env.DEV"));
   assert.ok(explorer.includes("{showDevDeployment && ("));
+  assert.equal((explorer.match(/\{showDevDeployment && \(/g) || []).length, 2);
 });
