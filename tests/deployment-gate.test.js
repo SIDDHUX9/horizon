@@ -22,6 +22,12 @@ test('deployment gate requires all on-chain findings including deploy linkage', 
   assert.match(source, /record\.verification\.contractDeployedByTransaction !== true/);
 });
 
+test('dev API cannot mutate the canonical deployment record', () => {
+  const plugin = fs.readFileSync(path.resolve(dir, '../scripts/vite-midnight-plugin.js'), 'utf8');
+  assert.equal(plugin.includes('writeFileSync(deployedConfigPath'), false);
+  assert.match(plugin, /record-deployment.*501/s);
+});
+
 test('record never contains the retracted fake hashes', () => {
   const serialized = JSON.stringify(record).toLowerCase();
   const retracted = [
