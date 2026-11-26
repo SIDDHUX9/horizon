@@ -12,7 +12,9 @@
     "preflight:deploy": "node scripts/deploy-midnight.js",
     "verify:deployment": "node scripts/verify-deployment.js",
     "verify:artifacts": "node scripts/verify-artifacts.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.js",
+    "ci": "npm run typecheck && npm run verify:artifacts && npm test && npm run build"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.21.0",
