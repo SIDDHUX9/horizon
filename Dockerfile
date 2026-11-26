@@ -1,18 +1,15 @@
+# Production image: build the SPA once, serve static assets only.
+# Secrets are excluded by .dockerignore and are never copied into this image.
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy dependency manifests
 COPY package*.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install
-
-# Copy application source code
 COPY . .
+RUN npm run build
 
-# Expose Vite dev port
-EXPOSE 5173
+EXPOSE 4173
 
-# Run Vite dev server bound to 0.0.0.0 for container networking
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]

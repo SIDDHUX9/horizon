@@ -10,7 +10,8 @@
     "compile:compact": "node scripts/compile-compact.js",
     "prove:real": "node scripts/generate-real-proof.js",
     "deploy:midnight": "node scripts/deploy-midnight.js",
-    "lifecycle:run": "node scripts/execute-lifecycle.js"
+    "lifecycle:run": "node scripts/execute-lifecycle.js",
+    "verify:deployment": "node scripts/verify-deployment.js"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "^0.19.0",

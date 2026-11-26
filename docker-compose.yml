@@ -1,7 +1,7 @@
 services:
-  # Official Midnight Zero-Knowledge Proof Server
+  # Official Midnight Zero-Knowledge Proof Server (local development only)
   horizon-proof-server:
-    image: midnightnetwork/proof-server:latest
+    image: ghcr.io/midnight-ntwrk/proof-server:latest
     container_name: horizon-proof-server
     ports:
       - "6300:6300"
@@ -12,17 +12,16 @@ services:
       timeout: 5s
       retries: 3
 
-  # Horizon Protocol Web Application & Transparency Explorer
+  # Production static build served by Vite preview.
   horizon-web:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: horizon-web-app
     ports:
-      - "5173:5173"
+      - "5173:4173"
     environment:
-      - NODE_ENV=development
-      - VITE_PROOF_SERVER_URL=http://localhost:6300
+      - NODE_ENV=production
     depends_on:
       - horizon-proof-server
     restart: unless-stopped
