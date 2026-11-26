@@ -38,6 +38,19 @@ This README describes the intended architecture and clearly marks what exists to
 
 Run `npm run verify:deployment` at any time to check the canonical deployment record against the live indexer.
 
+### Mainnet blockers
+
+The following must be closed before real funds or production traffic are safe:
+
+1. Deploy the pinned Compact artifacts from a wallet-controlled transaction and confirm the address/tx relationship with `npm run confirm:deployment`.
+2. Exercise all five circuit wrappers against that deployment, including failed-proof and wrong-network cases.
+3. Replace caller-supplied `current_time` with an authoritative ledger timestamp.
+4. Authenticate borrower identifiers during snapshot registration.
+5. Implement NIGHT token custody and correct repayment/liquidation accounting in the contract.
+6. Replace the dev-only deploy API with an authenticated production backend if deployment tooling is exposed.
+7. Rotate any locally generated wallet keys that may have existed in ignored `.env` files.
+8. Complete an external security review before advertising mainnet readiness.
+
 ---
 
 ## Executive overview
