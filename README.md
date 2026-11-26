@@ -129,7 +129,7 @@ npm run verify:artifacts
 
 This checks the `compactc` 0.36.1 manifest, all artifact hashes, and the runtime 0.21.0 binding. A mismatch fails closed.
 
-To recompile, install Compact toolchain 0.36.1 and run `npm run compile:compact`. The script preserves committed proving keys unless a complete key set is regenerated.
+To verify source/binding reproducibility, install Compact toolchain 0.36.1 and run `npm run compile:compact -- --check`. This is read-only and fails if generated bindings, ZKIR, or manifest differ from the committed artifacts. To regenerate keys, run `npm run compile:compact -- --full`; it fails closed unless a complete prover/verifier key set is produced and the pinned client manifest hash matches (use `--update-client-hash` only after reviewing the artifact diff).
 
 ### Run all checks
 
