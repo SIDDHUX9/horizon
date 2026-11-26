@@ -95,7 +95,7 @@ export const LoanDetailTerminal: React.FC<LoanDetailTerminalProps> = ({
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#11161a] tracking-tight">Active Loan Management</h2>
           <p className="text-sm text-[#525f6c] leading-relaxed">
-            Monitor active debt, interest accrual, and repayment schedules. Each repayment updates the on-chain ledger in zero-knowledge without revealing borrower identity or employer telemetry.
+            Monitor simulated debt, interest accrual, and repayment schedules. Repayments update the local demo ledger only; no on-chain state is written.
           </p>
         </div>
 
@@ -118,7 +118,7 @@ export const LoanDetailTerminal: React.FC<LoanDetailTerminalProps> = ({
         {loans.length === 0 ? (
           <div className="bg-white border border-[#eaeae5] rounded-3xl p-12 text-center text-[#707e8c] space-y-3 shadow-sm">
             <Clock className="w-10 h-10 mx-auto text-[#b8b8b0]" />
-            <p className="text-base font-semibold text-[#11161a]">No active loans found on-chain</p>
+            <p className="text-base font-semibold text-[#11161a]">No active loans found in the demo ledger</p>
             <p className="text-xs text-[#525f6c] max-w-sm mx-auto">
               Head over to the Borrower Studio to evaluate loan terms and submit your confidential zero-knowledge financial snapshot.
             </p>

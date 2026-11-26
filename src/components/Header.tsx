@@ -77,9 +77,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Status */}
           <div className="hidden sm:flex items-center gap-2 text-[11px] font-medium text-[#707e8c] shrink-0">
-            <span>Dual-Ledger Protocol</span>
+            <span>Preview Network</span>
             <span className="text-[#d5d5cf]">•</span>
-            <span className="text-emerald-700 font-semibold font-mono">Synced</span>
+            <span className="text-amber-700 font-semibold font-mono">Demo State</span>
           </div>
         </div>
       </div>

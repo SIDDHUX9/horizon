@@ -16,6 +16,7 @@ export interface LaceConnectedSession {
   dustAddress?: string;
   dustBalance?: bigint;
   dustCap?: bigint;
+  nightBalance?: bigint;
   config?: Configuration;
   api: ConnectedAPI;
 }
@@ -164,6 +165,16 @@ export async function connectLaceWallet(
     } catch {}
   }
 
+  // Retrieve unshielded NIGHT balance (token key is wallet/network dependent)
+  let nightBalance: bigint | undefined;
+  if (typeof connectedApi.getUnshieldedBalances === 'function') {
+    try {
+      const balances = await connectedApi.getUnshieldedBalances();
+      const entry = Object.entries(balances).find(([token]) => token.toUpperCase() === 'NIGHT');
+      nightBalance = entry?.[1];
+    } catch {}
+  }
+
   // Retrieve active network configuration
   let config: Configuration | undefined;
   if (typeof connectedApi.getConfiguration === 'function') {
@@ -178,6 +189,7 @@ export async function connectLaceWallet(
     shieldedAddress,
     dustBalance,
     dustCap,
+    nightBalance,
     config,
     api: connectedApi,
   };

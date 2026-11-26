@@ -138,7 +138,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
     if (!activePool) return;
     setErrorMsg(null);
     setProvingLoan(true);
-    setProofStep('Phase 1/4: Synthesizing private financial snapshot witness into local memory...');
+    setProofStep('Phase 1/4: Preparing demo financial snapshot in local memory...');
     setProvingProgressPct(15);
     const startTime = Date.now();
 
@@ -149,17 +149,17 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
     try {
       // Step 1: Witness synthesis delay
       await new Promise((r) => setTimeout(r, 600));
-      setProofStep('Phase 2/4: Computing R1CS constraint matrix & Poseidon commitment match...');
+      setProofStep('Phase 2/4: Evaluating demo underwriting inequalities locally...');
       setProvingProgressPct(40);
 
       // Step 2: Prover Server execution
       await new Promise((r) => setTimeout(r, 900));
-      setProofStep('Phase 3/4: Transmitting constraint system to Midnight Proof Server (Docker :6300)...');
+      setProofStep('Phase 3/4: Creating a simulated proof digest (no proof server call)...');
       setProvingProgressPct(70);
 
       // Step 3: Curve scalar multiplication & proof packaging
       await new Promise((r) => setTimeout(r, 800));
-      setProofStep('Phase 4/4: Finalizing succinct zero-knowledge proof & balancing testnet transaction...');
+      setProofStep('Phase 4/4: Recording the simulated transaction in the demo ledger...');
       setProvingProgressPct(90);
 
       const snap: FinancialSnapshot = {
@@ -179,7 +179,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
       });
 
       setProvingProgressPct(100);
-      setProofStep('Complete: Proof successfully validated by Midnight Consensus Engine!');
+      setProofStep('Complete: Simulated loan request recorded in the demo ledger.');
       setLastProofTrace(trace);
 
       confetti({
@@ -217,11 +217,17 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
     setSalt(generateRandomHex(32));
   };
 
-  const copyCurlCmd = () => {
-    const curl = `curl -X POST https://preview-service-v2-01.midnightexplorer.com/api/v1/graphql \\
-  -H "Content-Type: application/json" \\
-  -d '{"query":"mutation SubmitCommitment { submitSnapshot(commitment: \\"${previewCommitment}\\") { txHash blockHeight status } }"}'`;
-    navigator.clipboard.writeText(curl);
+  const copyDemoPayload = () => {
+    const payload = JSON.stringify(
+      {
+        mode: 'local-demo',
+        commitment: previewCommitment,
+        note: 'No network request is made by this demo. Raw financial values remain in browser state.',
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(payload);
     setCopiedCurl(true);
     setTimeout(() => setCopiedCurl(false), 2000);
   };
@@ -248,7 +254,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-[#525f6c] leading-relaxed max-w-3xl font-normal">
-            Evaluate credit eligibility in zero-knowledge. Your certified income and debts remain confidential in client memory. A cryptographic commitment hash is published on Midnight, and loan qualification is verified mathematically without disclosing personal numbers to lenders or the public.
+            Preview how private underwriting will work. In this demo, your values stay in browser memory and a simulated commitment is recorded locally. No proof is generated and nothing is published to Midnight.
           </p>
 
           {/* Preset Segmented Selector */}
@@ -414,7 +420,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs font-bold text-[#11161a]">
                 <Wifi className="w-4 h-4 text-cyan-700" />
-                <span>Client Network Wire Audit</span>
+                <span>Demo Data-Flow Preview</span>
               </div>
               <span className="text-[10px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 w-fit font-bold">
                 <CheckCheck className="w-3 h-3" />
@@ -469,7 +475,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
             {currentCommitment && (
               <div className="mt-2.5 text-center text-xs text-emerald-700 font-mono flex items-center justify-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>On-Chain Commitment: {currentCommitment.slice(0, 14)}...</span>
+                <span>Demo Commitment: {currentCommitment.slice(0, 14)}...</span>
               </div>
             )}
           </div>
@@ -545,7 +551,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
           {activePool && (
             <div className="space-y-3 p-5 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5]">
               <div className="flex items-center justify-between text-xs font-bold text-[#11161a]">
-                <span>In-Circuit Zero-Knowledge Audit:</span>
+                <span>Local Inequality Audit (Demo):</span>
                 <span className={allCriteriaMet ? 'text-emerald-700 font-semibold' : 'text-rose-700 font-semibold'}>
                   {allCriteriaMet ? 'All 3 Constraints Satisfied' : 'Inequalities Not Satisfied'}
                 </span>
@@ -659,7 +665,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
                   ? 'Commit Snapshot First (Step 1)'
                   : !allCriteriaMet
                   ? 'Criteria Not Satisfied'
-                  : `Generate ZK Proof & Disburse ${formatNight(BigInt(requestedAmount))}`}
+                  : `Simulate Loan Request (${formatNight(BigInt(requestedAmount))})`}
               </span>
             </button>
           </div>
@@ -674,27 +680,27 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               <CheckCircle2 className="w-6 h-6 shrink-0" />
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-[#11161a]">
-                  Zero-Knowledge Proof Verified by Consensus Engine!
+                  Simulated Underwriting Evaluation Complete
                 </h3>
                 <p className="text-xs text-[#525f6c] font-mono">
-                  All 3 underwriting inequalities verified in ZK without exposing raw financials.
+                  Local inequality checks passed against the demo ledger. No ZK proof was generated.
                 </p>
               </div>
             </div>
-            <span className="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs">Proof Verified On-Chain</span>
+            <span className="badge bg-amber-100 text-amber-900 border border-amber-300 text-xs">Demo Simulation</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
             <div className="p-3.5 rounded-xl bg-white border border-emerald-100 shadow-sm">
-              <span className="text-[#707e8c] block text-[10px]">Proof Time:</span>
+              <span className="text-[#707e8c] block text-[10px]">Simulated Time:</span>
               <span className="text-emerald-800 font-bold">
                 {lastProofTrace.duration_ms || 2840} ms ({(((lastProofTrace.duration_ms || 2840) / 1000)).toFixed(2)}s)
               </span>
             </div>
             <div className="p-3.5 rounded-xl bg-white border border-emerald-100 shadow-sm">
-              <span className="text-[#707e8c] block text-[10px]">Proof Payload:</span>
+              <span className="text-[#707e8c] block text-[10px]">Proof Digest (Simulated):</span>
               <span className="text-[#11161a] font-bold">
-                {lastProofTrace.proof_size_bytes || 1024} bytes
+                {lastProofTrace.proof_size_bytes ? `${lastProofTrace.proof_size_bytes} bytes` : 'n/a'}
               </span>
             </div>
             <div className="p-3.5 rounded-xl bg-white border border-emerald-100 shadow-sm">
@@ -702,15 +708,15 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               <span className="text-[#11161a] font-bold">{lastProofTrace.circuit_name}()</span>
             </div>
             <div className="p-3.5 rounded-xl bg-white border border-emerald-100 shadow-sm">
-              <span className="text-[#707e8c] block text-[10px]">Block Height:</span>
-              <span className="text-[#11161a] font-bold">#{lastProofTrace.block_height || '805,390+'}</span>
+              <span className="text-[#707e8c] block text-[10px]">Demo Block:</span>
+              <span className="text-[#11161a] font-bold">#{lastProofTrace.block_height ?? 'n/a'}</span>
             </div>
           </div>
 
           {lastProofTrace.tx_hash && (
             <div className="p-4 rounded-xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="text-[#707e8c]">{lastProofTrace.onchain_confirmed ? 'On-Chain Tx Hash:' : 'ZK Proof Digest:'}</span>
+                <span className="text-[#707e8c]">{lastProofTrace.onchain_confirmed ? 'On-Chain Tx Hash:' : 'Simulated Transaction Digest:'}</span>
                 <span className="text-[#11161a] font-bold break-all">{lastProofTrace.tx_hash}</span>
               </div>
               {lastProofTrace.onchain_confirmed ? (
@@ -725,7 +731,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
                 </a>
               ) : (
                 <span className="text-[11px] text-[#525f6c] bg-[#f5f5f0] border border-[#eaeae5] px-2.5 py-1 rounded-full font-sans shrink-0">
-                  Verified Local Proof (Port 6300)
+                  Local Simulation (No Proof Generated)
                 </span>
               )}
             </div>
@@ -743,8 +749,8 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
                   <Wifi className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#11161a]">Zero-Data-Leakage Network Audit</h3>
-                  <p className="text-xs text-[#525f6c]">Confirming 0 bytes of sensitive data leave the browser</p>
+                  <h3 className="text-lg font-bold text-[#11161a]">Demo Data-Flow Preview</h3>
+                  <p className="text-xs text-[#525f6c]">This is a local payload preview, not a captured network audit.</p>
                 </div>
               </div>
               <button
@@ -758,28 +764,30 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
             <div className="space-y-4 text-xs font-mono">
               <div className="p-4 rounded-xl bg-[#f8f8f6] border border-[#eaeae5] space-y-2">
                 <div className="text-[11px] text-[#11161a] font-bold uppercase tracking-wider">
-                  HTTP/2 Wire Request
+                  Local Demo Action
                 </div>
                 <div className="text-[#525f6c] leading-relaxed break-all">
-                  POST https://preview-service-v2-01.midnightexplorer.com/api/v1/graphql
+                  No network request. State remains in this browser.
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[#f8f8f6] border border-[#eaeae5] space-y-2">
                 <div className="text-[11px] text-[#11161a] font-bold uppercase tracking-wider">
-                  Request Payload (Zero Raw Numbers)
+                  Demo Payload Preview
                 </div>
                 <pre className="text-[#374151] text-[11px] overflow-x-auto p-2 bg-white rounded-lg border border-[#eaeae5]">
 {JSON.stringify(
   {
-    operation: 'submitSnapshotCommitment',
+    mode: 'local-demo',
+    operation: 'previewSnapshotCommitment',
     commitment: previewCommitment,
     timestamp: Date.now(),
-    witness_audit: {
+    demo_observations: {
       raw_income_transmitted: false,
       raw_debt_transmitted: false,
       raw_dti_transmitted: false,
       raw_salt_transmitted: false,
+      note: 'No request is made, so these are properties of the demo rather than measured traffic.',
     },
   },
   null,
@@ -790,11 +798,11 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
 
               <div className="flex items-center justify-between pt-2">
                 <button
-                  onClick={copyCurlCmd}
+                  onClick={copyDemoPayload}
                   className="px-4 py-2 rounded-full bg-[#f5f5f0] hover:bg-[#eaeae5] border border-[#d5d5cf] text-[#11161a] text-xs font-semibold flex items-center gap-1.5 transition"
                 >
                   {copiedCurl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedCurl ? 'Copied cURL' : 'Copy cURL Command'}</span>
+                  <span>{copiedCurl ? 'Copied Payload' : 'Copy Demo Payload'}</span>
                 </button>
                 <button
                   onClick={() => setShowNetworkModal(false)}

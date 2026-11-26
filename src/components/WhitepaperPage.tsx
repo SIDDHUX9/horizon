@@ -19,18 +19,26 @@ import {
   Sparkles
 } from 'lucide-react';
 import { ProtocolRoute } from '../services/router';
+import deployedContractData from '../contracts/deployed-contract.json';
 
 interface WhitepaperPageProps {
   onNavigate: (route: ProtocolRoute) => void;
   blockHeight?: number;
 }
 
-export const WhitepaperPage: React.FC<WhitepaperPageProps> = ({ onNavigate, blockHeight = 815539 }) => {
+export const WhitepaperPage: React.FC<WhitepaperPageProps> = ({ onNavigate, blockHeight }) => {
   const [copied, setCopied] = useState(false);
   const [activeSection, setActiveSection] = useState('abstract');
 
-  const contractAddress = '0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee';
-  const zkProofHash = '0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26';
+  const deployment = deployedContractData as {
+    deploymentStatus?: string;
+    verifiedOnChain?: boolean;
+    contractAddress?: string | null;
+    deployTxHash?: string | null;
+  };
+  const deploymentVerified = deployment.verifiedOnChain === true && Boolean(deployment.contractAddress);
+  const contractAddress = deployment.contractAddress;
+  const deployTxHash = deployment.deployTxHash;
 
   const sections = [
     { id: 'abstract', title: 'Abstract & Executive Summary' },
@@ -38,20 +46,20 @@ export const WhitepaperPage: React.FC<WhitepaperPageProps> = ({ onNavigate, bloc
     { id: 'architecture', title: '2. Dual-Ledger Architecture & State Model' },
     { id: 'mathematics', title: '3. Mathematical Formulations & Cross-Multiplication' },
     { id: 'circuits', title: '4. Compact Smart Contract Circuits' },
-    { id: 'prover', title: '5. Real Proof Generation & Proof Server Protocol' },
-    { id: 'security', title: '6. Security, Privacy & Game-Theoretic Analysis' },
-    { id: 'deployment', title: '7. Live Testnet Deployment Telemetry' },
+    { id: 'prover', title: '5. Proof Server Integration Status' },
+    { id: 'security', title: '6. Security, Privacy & Protocol Limits' },
+    { id: 'deployment', title: '7. Deployment & Verification Status' },
     { id: 'comparison', title: '8. Comparative Matrix: Horizon vs. Legacy DeFi' },
     { id: 'roadmap', title: '9. Future Research & Conclusion' },
   ];
 
   const handleCopyMarkdown = () => {
     const text = `# HORIZON PROTOCOL: Zero-Knowledge Private Underwriting & Dual-Ledger Credit Infrastructure on Midnight
-Verified Contract: ${contractAddress}
-Proof Hash: ${zkProofHash}
+Status: Prototype / local demo; no verified deployment
+Contract: ${contractAddress || 'None'}
 Documentation: https://github.com/SIDDHUX9/horizon
 
-Full Whitepaper available in repository root at WHITEPAPER.md.`;
+Full whitepaper available in the repository root at WHITEPAPER.md.`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -153,33 +161,44 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
             Zero-Knowledge Private Underwriting &amp; Dual-Ledger Credit Infrastructure on Midnight Network.
           </p>
 
-          {/* Testnet Telemetry Badges */}
+          {/* Status Badges */}
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-mono">
             <div className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b]">
-              <span className="text-emerald-600 font-bold">●</span>
-              <span>Network: Midnight Preview</span>
+              <span className="text-amber-600 font-bold">●</span>
+              <span>Target: Midnight Preview</span>
             </div>
-            <a
-              href={`https://preview.midnightexplorer.com/blocks/${blockHeight}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b] hover:border-[#11161a] transition-colors"
-            >
-              <Clock className="w-3.5 h-3.5 text-cyan-600" />
-              <span>Block #{blockHeight}</span>
-            </a>
-            <a
-              href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#11161a] hover:border-[#11161a] transition-colors"
-            >
-              <span>Contract: {contractAddress.slice(0, 8)}...{contractAddress.slice(-6)}</span>
-              <ExternalLink className="w-3 h-3 text-[#707e8c]" />
-            </a>
+            {blockHeight ? (
+              <a
+                href={`https://preview.midnightexplorer.com/blocks/${blockHeight}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b] hover:border-[#11161a] transition-colors"
+              >
+                <Clock className="w-3.5 h-3.5 text-cyan-600" />
+                <span>Live Block #{blockHeight}</span>
+              </a>
+            ) : (
+              <div className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#525f6c]">
+                <Clock className="w-3.5 h-3.5 text-cyan-600" />
+                <span>Block height unavailable</span>
+              </div>
+            )}
+            <div className="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-300 shadow-sm flex items-center gap-1.5 text-amber-900">
+              <span>{deploymentVerified ? 'Contract: verified' : 'Deployment: not verified'}</span>
+              {deploymentVerified && contractAddress && (
+                <a
+                  href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:underline"
+                >
+                  {contractAddress.slice(0, 8)}...{contractAddress.slice(-6)}
+                </a>
+              )}
+            </div>
             <div className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b]">
               <Terminal className="w-3.5 h-3.5 text-purple-600" />
-              <span>Proof Server: 127.0.0.1:6300</span>
+              <span>Local Proof Server (optional)</span>
             </div>
           </div>
         </div>
@@ -252,7 +271,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
             <div className="p-5 rounded-xl bg-white border border-[#eaeae5] shadow-sm space-y-2">
               <div className="font-bold text-sm text-[#11161a]">The Core Innovation</div>
               <p className="text-sm text-[#525f6c]">
-                <strong>Horizon</strong> decouples computational witnesses from public settlement states by leveraging the <strong>Midnight Dual-Ledger</strong>. Borrowers evaluate credit criteria locally on client devices through Compact zero-knowledge circuits, publishing only cryptographic commitments and zk-SNARK proofs. Lenders establish risk-weighted pools, yet verify eligibility strictly as cryptographic boolean statements without ever observing underlying integers.
+                <strong>Horizon</strong> is designed around the <strong>Midnight Dual-Ledger</strong>: borrowers keep financial values in a shielded witness domain while lenders publish transparent pool parameters. The Compact contract source already encodes underwriting inequalities, but the current web application uses a local demo ledger and does not yet generate circuit proofs or publish transactions.
               </p>
             </div>
           </article>
@@ -325,25 +344,28 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
                   </tr>
                   <tr>
                     <td className="p-3.5 font-medium text-[#11161a]">Snapshot Commitment</td>
-                    <td className="p-3.5">On-Chain State</td>
+                    <td className="p-3.5">Intended Public Ledger</td>
                     <td className="p-3.5 font-mono text-xs">H(Snapshot)</td>
                     <td className="p-3.5"><span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold text-xs">PUBLIC HASH</span></td>
                   </tr>
                   <tr>
                     <td className="p-3.5 font-medium text-[#11161a]">Pool Risk Thresholds</td>
-                    <td className="p-3.5">On-Chain State</td>
+                    <td className="p-3.5">Intended Public Ledger</td>
                     <td className="p-3.5 font-mono text-xs">Struct LendingPool</td>
                     <td className="p-3.5"><span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-semibold text-xs">PUBLIC</span></td>
                   </tr>
                   <tr>
                     <td className="p-3.5 font-medium text-[#11161a]">Collateral Locked in Escrow</td>
-                    <td className="p-3.5">Contract Escrow</td>
-                    <td className="p-3.5 font-mono text-xs">Uint&lt;64&gt; NIGHT</td>
+                    <td className="p-3.5">Not implemented</td>
+                    <td className="p-3.5 font-mono text-xs">Integer accounting only</td>
                     <td className="p-3.5"><span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-semibold text-xs">PUBLIC</span></td>
                   </tr>
                 </tbody>
               </table>
             </div>
+            <p className="text-xs text-[#707e8c]">
+              Current implementation note: the demo stores SHA-256 commitments in browser storage, while the Compact circuit uses <code>persistentHash</code>. These schemes are not interchangeable, and the contract does not yet custody NIGHT tokens.
+            </p>
           </article>
 
           {/* Section 3: Mathematics */}
@@ -438,83 +460,103 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
                 </div>
               </div>
             </div>
+            <p className="text-xs text-[#707e8c]">
+              Contract-level gaps remain: snapshot registration does not authenticate borrower identifiers, <code>current_time</code> is caller-supplied, and repayment/liquidation accounting is incomplete. These are described in the repository whitepaper.
+            </p>
           </article>
 
           {/* Section 5: Proof Server */}
           <article id="prover" className="scroll-mt-28 space-y-4">
             <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#11161a] border-b border-[#eaeae5] pb-3">
-              5. Real Proof Generation &amp; Proof Server Protocol
+              5. Proof Server Integration Status
             </h2>
             <p>
-              Horizon interfaces with the official Dockerized Midnight Proof Server (<code>ghcr.io/midnight-ntwrk/proof-server:latest</code>) over local loopback (<code>127.0.0.1:6300</code>). Proving takes 2–3 ms in simulation and 2–4 seconds for full on-chain zk-SNARK commitments.
+              The repository includes compiled Compact artifacts and Docker configuration for the official proof server. The browser workflow currently animates proof progress locally; it does not call a proof server or generate a circuit proof. Existing scripts such as <code>npm run prove:real</code> are connectivity probes that prove an empty transaction, not a Horizon circuit call.
             </p>
             <div className="p-4 rounded-xl bg-[#11161a] text-slate-200 font-mono text-xs overflow-x-auto space-y-1">
-              <div className="text-slate-400"># Start proof server daemon</div>
-              <div className="text-cyan-400">docker run -d -p 6300:6300 ghcr.io/midnight-ntwrk/proof-server:latest</div>
-              <div className="text-slate-400 pt-2"># Run genuine proving verification test</div>
-              <div className="text-emerald-400">npm run prove:real</div>
-              <div className="text-slate-500">&gt;&gt; Real Proof Hash: 0x930ab57c0e90799b6d6e4ae9a0ff7650b80541d49969377b0ed1334dd321faa1</div>
+              <div className="text-slate-400"># Start a local proof server (optional)</div>
+              <div className="text-cyan-400">docker compose up -d horizon-proof-server</div>
+              <div className="text-slate-400 pt-2"># Verify deployment claims against the live indexer</div>
+              <div className="text-emerald-400">npm run verify:deployment</div>
+              <div className="text-slate-500">&gt;&gt; Current status: not-deployed / no verified circuit proofs</div>
             </div>
           </article>
 
           {/* Section 6: Security */}
           <article id="security" className="scroll-mt-28 space-y-4">
             <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#11161a] border-b border-[#eaeae5] pb-3">
-              6. Security, Privacy &amp; Game-Theoretic Analysis
+              6. Security, Privacy &amp; Protocol Limits
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
               <div className="p-4 rounded-xl bg-white border border-[#eaeae5] shadow-sm">
-                <div className="font-bold text-[#11161a] mb-1">Computational Soundness</div>
+                <div className="font-bold text-[#11161a] mb-1">What is implemented</div>
                 <p className="text-[#525f6c]">
-                  By the Schwartz-Zippel lemma over Midnight's scalar curve, an ineligible borrower has less than 2<sup>-254</sup> probability of forging an approving proof.
+                  The Compact source and generated ZKIR contain inequality assertions for income, DTI, collateral, and repayment. The demo keeps raw financial values in browser memory.
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-white border border-[#eaeae5] shadow-sm">
-                <div className="font-bold text-[#11161a] mb-1">MEV &amp; Front-Running Immunity</div>
+                <div className="font-bold text-[#11161a] mb-1">What is not yet proven</div>
                 <p className="text-[#525f6c]">
-                  Mempool observers cannot inspect borrower cash flow limits or willingness to pay, eliminating predatory liquidation hunting.
+                  There is no circuit-call client, no independent income attestation, no token custody, no authoritative time source, no automated test suite, and no third-party audit.
                 </p>
               </div>
             </div>
           </article>
 
-          {/* Section 7: Live Testnet */}
+          {/* Section 7: Deployment */}
           <article id="deployment" className="scroll-mt-28 space-y-4">
             <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#11161a] border-b border-[#eaeae5] pb-3">
-              7. Live Testnet Deployment Telemetry
+              7. Deployment &amp; Verification Status
             </h2>
             <div className="p-6 rounded-2xl bg-white border border-[#eaeae5] shadow-sm space-y-4 font-mono text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
-                <span className="text-[#707e8c]">Deployed Contract:</span>
-                <a
-                  href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-cyan-700 hover:underline break-all"
-                >
-                  {contractAddress}
-                </a>
+                <span className="text-[#707e8c]">Deployment status:</span>
+                <span className={deploymentVerified ? 'font-bold text-emerald-700' : 'font-bold text-amber-800'}>
+                  {deploymentVerified ? 'VERIFIED ON-CHAIN' : 'NOT DEPLOYED'}
+                </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
-                <span className="text-[#707e8c]">Proof Verification Hash:</span>
-                <a
-                  href={`https://preview.midnightexplorer.com/transactions/${zkProofHash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-emerald-700 hover:underline break-all"
-                >
-                  {zkProofHash}
-                </a>
+                <span className="text-[#707e8c]">Contract address:</span>
+                {contractAddress ? (
+                  <a
+                    href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-cyan-700 hover:underline break-all"
+                  >
+                    {contractAddress}
+                  </a>
+                ) : (
+                  <span className="text-[#525f6c]">None</span>
+                )}
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
-                <span className="text-[#707e8c]">Live Block Height:</span>
-                <span className="font-bold text-[#11161a]">#{blockHeight}</span>
+                <span className="text-[#707e8c]">Deployment transaction:</span>
+                {deployTxHash ? (
+                  <a
+                    href={`https://preview.midnightexplorer.com/transactions/${deployTxHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 hover:underline break-all"
+                  >
+                    {deployTxHash}
+                  </a>
+                ) : (
+                  <span className="text-[#525f6c]">None</span>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#f0f0eb] gap-2">
+                <span className="text-[#707e8c]">Live block height:</span>
+                <span className="font-bold text-[#11161a]">{blockHeight ? `#${blockHeight}` : 'Unavailable'}</span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-[#707e8c]">REST Indexer Endpoint:</span>
-                <span className="text-[#525f6c] break-all">https://preview-service-v2-01.midnightexplorer.com/api/v1</span>
+                <span className="text-[#707e8c]">Verification command:</span>
+                <span className="text-[#525f6c] break-all">npm run verify:deployment</span>
               </div>
             </div>
+            <p className="text-xs text-[#707e8c]">
+              Previous address and transaction claims failed live indexer verification and were removed. The canonical record is <code>src/contracts/deployed-contract.json</code>.
+            </p>
           </article>
 
           {/* Section 8: Comparison */}
@@ -588,9 +630,9 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
             {/* Bottom CTA Banner */}
             <div className="p-8 rounded-2xl bg-gradient-to-br from-[#11161a] to-[#1f262d] text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
               <div>
-                <h3 className="text-xl font-bold font-serif mb-1">Experience Zero-Knowledge Credit</h3>
+                <h3 className="text-xl font-bold font-serif mb-1">Explore Private Underwriting</h3>
                 <p className="text-xs sm:text-sm text-slate-300">
-                  Run a live loan cycle with authentic ZK proof generation on Midnight Preview testnet.
+                  Run a local demo loan cycle. Circuit proofs and on-chain settlement are not enabled yet.
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -598,7 +640,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
                   onClick={() => onNavigate('borrower')}
                   className="px-5 py-2.5 rounded-full bg-white text-[#11161a] font-semibold text-sm hover:bg-slate-100 transition shadow"
                 >
-                  Borrow in ZK
+                  Open Borrower Demo
                 </button>
                 <button
                   onClick={() => onNavigate('lender')}
@@ -623,7 +665,7 @@ Full Whitepaper available in repository root at WHITEPAPER.md.`;
               H O R I Z O N
             </span>
             <span className="text-[#d5d5cf]">|</span>
-            <span className="font-medium">Private Credit Protocol</span>
+            <span className="font-medium">Private Underwriting Prototype</span>
           </div>
 
           <div className="flex items-center gap-6 text-sm font-medium">

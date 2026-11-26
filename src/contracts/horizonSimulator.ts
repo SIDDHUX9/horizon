@@ -285,7 +285,7 @@ export class HorizonProtocol {
     const pool_id = params.pool_id || generateRandomHex(32);
 
     if (this.state.pools[pool_id]) {
-      throw new Error('Pool ID already exists on-chain');
+      throw new Error('Pool ID already exists in the demo ledger');
     }
     if (params.deposit_amount <= 0n) {
       throw new Error('Initial deposit must be positive');
@@ -338,7 +338,7 @@ export class HorizonProtocol {
       hidden_private_data: {
         witness_status: 'No private data required (pure public pool underwriting criteria)',
       },
-      proof_verified: true,
+      proof_verified: false,
     };
 
     this.state.transactions.push(tx);
@@ -384,7 +384,7 @@ export class HorizonProtocol {
         computed_collateral_ratio: 'HIDDEN (Protected in client witness)',
         salt: 'HIDDEN (Blinding entropy never transmitted)',
       },
-      proof_verified: true,
+      proof_verified: false,
     };
 
     this.state.transactions.push(tx);
@@ -406,7 +406,7 @@ export class HorizonProtocol {
     const loan_id = params.loan_id || generateRandomHex(32);
 
     if (this.state.loans[loan_id]) {
-      throw new Error('Loan ID already exists on-chain');
+      throw new Error('Loan ID already exists in the demo ledger');
     }
     const pool = this.state.pools[params.pool_id];
     if (!pool) {
@@ -532,13 +532,13 @@ export class HorizonProtocol {
         due_date_timestamp: new Date(Number(dueDate) * 1000).toLocaleString(),
       },
       hidden_private_data: {
-        borrower_income: 'SEALED IN ZK PROOF (Never visible on-chain)',
-        borrower_existing_debt: 'SEALED IN ZK PROOF (Never visible on-chain)',
+        borrower_income: 'PRIVATE DEMO VALUE (Not published)',
+        borrower_existing_debt: 'PRIVATE DEMO VALUE (Not published)',
         borrower_dti_ratio: 'SEALED IN ZK PROOF (Only proved <= ceiling)',
         borrower_collateral_ratio: 'SEALED IN ZK PROOF (Only proved >= floor)',
-        secret_blinding_salt: 'SEALED IN ZK PROOF (Never visible on-chain)',
+        secret_blinding_salt: 'PRIVATE DEMO VALUE (Not published)',
       },
-      proof_verified: true,
+      proof_verified: false,
     };
 
     proofTrace.tx_hash = tx.tx_hash;
@@ -625,7 +625,7 @@ export class HorizonProtocol {
       hidden_private_data: {
         witness_status: 'No financial data exposed. Payment source income remains completely private.',
       },
-      proof_verified: true,
+      proof_verified: false,
     };
 
     this.state.transactions.push(tx);
@@ -686,7 +686,7 @@ export class HorizonProtocol {
       hidden_private_data: {
         witness_status: 'Borrower default occurred silently without exposing private cause or finances.',
       },
-      proof_verified: true,
+      proof_verified: false,
     };
 
     this.state.transactions.push(tx);
@@ -748,26 +748,8 @@ export class HorizonProtocol {
     pool1.total_lent += 50000n;
     this.state.loans[expiredLoanId] = expiredLoan;
 
-    // 0. Verified On-Chain Deployment Transaction on Midnight Preview
-    this.state.transactions.push({
-      tx_hash: '0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26',
-      block_height: 815539,
-      circuit: 'deploy',
-      caller: 'Midnight Lace Protocol Account',
-      timestamp: 1789110870000,
-      onchain_confirmed: true,
-      explorer_url: 'https://preview.midnightexplorer.com/transactions/0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26',
-      public_data: {
-        action: 'Contract Deployment',
-        contract_address: '0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee',
-        circuits: 'createLendingPool, submitFinancialSnapshot, requestLoan, repayLoan, liquidate',
-        status: 'SUCCESS',
-      },
-      hidden_private_data: {
-        witness_status: 'Contract bytecodes and 5 ZKIR verifier operations registered on ledger.',
-      },
-      proof_verified: true,
-    });
+    // No seeded deployment transaction: Horizon has no verified on-chain deployment.
+    // Explorer rows generated below are explicitly local simulations.
 
     const genesisPool1Tx = generateCircuitProofDigest('createLendingPool', pool1.pool_id);
     this.state.transactions.push({
@@ -787,7 +769,7 @@ export class HorizonProtocol {
       hidden_private_data: {
         witness_status: 'Public pool parameters',
       },
-      proof_verified: true,
+      proof_verified: false,
     });
 
     const genesisLoanTx = generateCircuitProofDigest('requestLoan', expiredLoanId);
@@ -809,13 +791,13 @@ export class HorizonProtocol {
         due_date_timestamp: new Date(Number(expiredLoan.due_date) * 1000).toLocaleString(),
       },
       hidden_private_data: {
-        borrower_income: 'SEALED IN ZK PROOF (Never visible on-chain)',
-        borrower_existing_debt: 'SEALED IN ZK PROOF (Never visible on-chain)',
+        borrower_income: 'PRIVATE DEMO VALUE (Not published)',
+        borrower_existing_debt: 'PRIVATE DEMO VALUE (Not published)',
         borrower_dti_ratio: 'SEALED IN ZK PROOF (Only proved <= ceiling)',
         borrower_collateral_ratio: 'SEALED IN ZK PROOF (Only proved >= floor)',
-        secret_blinding_salt: 'SEALED IN ZK PROOF (Never visible on-chain)',
+        secret_blinding_salt: 'PRIVATE DEMO VALUE (Not published)',
       },
-      proof_verified: true,
+      proof_verified: false,
     });
 
     this.saveState();

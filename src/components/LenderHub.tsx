@@ -127,14 +127,14 @@ export const LenderHub: React.FC<LenderHubProps> = ({
         </button>
       </div>
 
-      {/* Aggregate On-Chain Stats Bar */}
+      {/* Aggregate Demo Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
-          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Protocol TVL</div>
+          <div className="text-[11px] font-semibold text-[#707e8c] uppercase tracking-wider">Demo TVL</div>
           <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {formatNight(totalDeposited)}
           </div>
-          <div className="text-[10px] text-emerald-700 font-mono mt-1">Real Contract State</div>
+          <div className="text-[10px] text-amber-700 font-mono mt-1">Demo Ledger State</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
@@ -142,7 +142,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
           <div className="text-xl font-bold font-mono text-emerald-700 mt-2">
             {formatNight(totalLiquidity)}
           </div>
-          <div className="text-[10px] text-emerald-700 font-mono mt-1">Ready for Borrowers</div>
+          <div className="text-[10px] text-amber-700 font-mono mt-1">Simulated Liquidity</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
@@ -150,7 +150,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
           <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {formatNight(totalLent)}
           </div>
-          <div className="text-[10px] text-[#707e8c] font-mono mt-1">Secured by ZK Proofs</div>
+          <div className="text-[10px] text-[#707e8c] font-mono mt-1">Simulated Accounting</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
@@ -158,7 +158,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
           <div className="text-xl font-bold font-mono text-[#11161a] mt-2">
             {poolCount} {poolCount === 1 ? 'Pool' : 'Pools'}
           </div>
-          <div className="text-[10px] text-[#707e8c] font-mono mt-1">On Midnight Ledger</div>
+          <div className="text-[10px] text-[#707e8c] font-mono mt-1">In Demo Ledger</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-[#eaeae5] shadow-sm flex flex-col justify-between">
@@ -186,7 +186,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
             <span>Active Lending Pools ({pools.length})</span>
           </h3>
           <span className="text-xs text-[#707e8c] font-mono">
-            Powered by Compact Circuit <code>createLendingPool()</code>
+            Demo simulation of <code>createLendingPool()</code>
           </span>
         </div>
 
@@ -195,7 +195,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
             <Coins className="w-10 h-10 text-[#9ca3af] mx-auto" />
             <h4 className="text-base font-bold text-[#11161a]">No Lending Pools Deployed Yet</h4>
             <p className="text-xs text-[#525f6c] max-w-md mx-auto">
-              Be the first liquidity provider to deploy an autonomous lending facility on Midnight Preview.
+              Create a simulated lending pool in the local demo ledger.
             </p>
             <button
               onClick={() => setShowModal(true)}

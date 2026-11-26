@@ -15,6 +15,7 @@ import { EditorialLandingPage } from './components/EditorialLandingPage';
 import { WhitepaperPage } from './components/WhitepaperPage';
 import { WalletModal } from './components/WalletModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { DemoModeBanner } from './components/DemoModeBanner';
 import { 
   getAvailableMidnightWallets, 
   connectLaceWallet, 
@@ -137,7 +138,7 @@ export const App: React.FC = () => {
       setNetworkId(session.config?.networkId || `Midnight ${selectedNetwork}`);
       setIndexerUri(session.config?.indexerUri);
       setWalletConnected(true);
-      setUserNightBalance(250000n);
+      setUserNightBalance(session.nightBalance ?? 0n);
       setWalletModalOpen(false);
       showToast(`Connected to ${session.walletName}: ${session.unshieldedAddress.slice(0, 8)}...${session.unshieldedAddress.slice(-6)}`, 'success');
     } catch (err: any) {
@@ -188,7 +189,7 @@ export const App: React.FC = () => {
 
   const handleResetDemo = () => {
     horizon.resetToDemo();
-    setUserNightBalance(250000n);
+    setUserNightBalance(laceSession?.nightBalance ?? 0n);
     refreshState();
     showToast('Protocol reset to default demonstration state', 'info');
   };
@@ -214,7 +215,7 @@ export const App: React.FC = () => {
     });
     setUserNightBalance((prev) => prev - params.deposit_amount);
     refreshState();
-    showToast(`Lending Pool ${pool.pool_id.slice(0, 10)}... deployed on Midnight!`, 'success');
+    showToast(`Simulated lending pool ${pool.pool_id.slice(0, 10)}... created in the demo ledger.`, 'success');
   };
 
   // CIRCUIT 2: Submit Snapshot
@@ -227,7 +228,7 @@ export const App: React.FC = () => {
 
     const { commitment } = await horizon.submitFinancialSnapshot(borrower, snapshot);
     refreshState();
-    showToast(`Snapshot commitment ${commitment.slice(0, 14)}... stored on-chain!`, 'success');
+    showToast(`Simulated snapshot commitment ${commitment.slice(0, 14)}... stored in the demo ledger.`, 'success');
     return commitment;
   };
 
@@ -257,7 +258,7 @@ export const App: React.FC = () => {
     setUserNightBalance((prev) => prev - params.collateral_deposit + params.requested_amount);
     refreshState();
     showToast(
-      `ZK Proof Verified! Loan of ${formatNight(params.requested_amount)} disbursed to your wallet.`,
+      `Simulated loan request complete: ${formatNight(params.requested_amount)} recorded in the demo ledger.`,
       'success'
     );
     return proofTrace;
@@ -280,9 +281,9 @@ export const App: React.FC = () => {
     if (isFullyRepaid) {
       // Collateral returned to user
       setUserNightBalance((prev) => prev + loan.collateral_locked);
-      showToast(`Loan settled in full! Collateral released back to wallet.`, 'success');
+      showToast('Simulated loan settled in full. Collateral release recorded in the demo ledger.', 'success');
     } else {
-      showToast(`Repayment of ${formatNight(amount)} recorded on-chain.`, 'info');
+      showToast(`Simulated repayment of ${formatNight(amount)} recorded in the demo ledger.`, 'info');
     }
     refreshState();
     return isFullyRepaid;
@@ -301,7 +302,7 @@ export const App: React.FC = () => {
       liquidator: userAddress,
     });
     refreshState();
-    showToast(`Permissionless liquidation completed! Seized collateral credited to pool.`, 'success');
+    showToast('Simulated liquidation complete. Collateral accounting updated in the demo ledger.', 'success');
   };
 
   const handleSelectPoolForBorrow = (poolId: string) => {
@@ -315,6 +316,7 @@ export const App: React.FC = () => {
   if (activeTab === 'landing') {
     return (
       <div className="min-h-screen bg-[#fbfbf9]">
+        <DemoModeBanner />
         <EditorialLandingPage
           onNavigate={handleNavigate}
           walletConnected={walletConnected}
@@ -366,6 +368,7 @@ export const App: React.FC = () => {
   if (activeTab === 'whitepaper') {
     return (
       <div className="min-h-screen bg-[#fbfbf9]">
+        <DemoModeBanner />
         <WhitepaperPage
           onNavigate={handleNavigate}
           blockHeight={blockHeight}
@@ -412,6 +415,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fbfbf9] text-[#11161a]">
+      <DemoModeBanner />
       {/* Header */}
       <Header
         activeTab={activeTab}
