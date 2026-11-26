@@ -9,7 +9,8 @@
 [![Compact Compiler](https://img.shields.io/badge/Compact%20Compiler-v0.36.1-emerald.svg)](https://github.com/midnightntwrk/compact)
 [![Proof Server](https://img.shields.io/badge/Proof%20Server-Docker%20:6300-purple.svg)](https://ghcr.io/midnight-ntwrk/proof-server)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org)
+[![Node.js](https://img.shields.io/badge/Node-%3E%3D22.12-green.svg)](https://nodejs.org)
 
 ---
 
