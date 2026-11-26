@@ -434,7 +434,7 @@ export const LenderHub: React.FC<LenderHubProps> = ({
                   disabled={loading}
                   className="bg-[#11161a] hover:bg-black text-white px-6 py-2.5 rounded-full font-semibold shadow-sm active:scale-95 disabled:opacity-50"
                 >
-                  {loading ? 'Deploying on Midnight...' : 'Deploy Lending Pool'}
+                  {loading ? 'Creating Demo Pool...' : 'Create Simulated Pool'}
                 </button>
               </div>
             </form>

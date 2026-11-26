@@ -271,7 +271,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
             <div className="p-5 rounded-xl bg-white border border-[#eaeae5] shadow-sm space-y-2">
               <div className="font-bold text-sm text-[#11161a]">The Core Innovation</div>
               <p className="text-sm text-[#525f6c]">
-                <strong>Horizon</strong> is designed around the <strong>Midnight Dual-Ledger</strong>: borrowers keep financial values in a shielded witness domain while lenders publish transparent pool parameters. The Compact contract source already encodes underwriting inequalities, but the current web application uses a local demo ledger and does not yet generate circuit proofs or publish transactions.
+                <strong>Horizon</strong> is designed around the <strong>Midnight Dual-Ledger</strong>: borrowers keep financial values in a shielded witness domain while lenders publish transparent pool parameters. The Compact contract source already encodes underwriting inequalities, and a deployment-gated client is ready to call them. Because no deployment is verified, the visible interactive workflow is an explicitly labelled local demo; no circuit proof or transaction has been published.
               </p>
             </div>
           </article>
@@ -471,7 +471,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
               5. Proof Server Integration Status
             </h2>
             <p>
-              The repository includes compiled Compact artifacts and Docker configuration for the official proof server. The browser workflow currently animates proof progress locally; it does not call a proof server or generate a circuit proof. <code>npm run preflight:proof</code> checks artifact integrity and proof-server reachability; it does not fabricate a proof.
+              The repository includes compiled Compact artifacts, Docker configuration for the official proof server, and a Midnight.js client that delegates proving to the wallet. Because no deployment is verified, the visible demo workflow animates progress locally and does not call a proof server or generate a circuit proof. <code>npm run preflight:proof</code> checks artifact integrity and proof-server reachability; it does not fabricate a proof.
             </p>
             <div className="p-4 rounded-xl bg-[#11161a] text-slate-200 font-mono text-xs overflow-x-auto space-y-1">
               <div className="text-slate-400"># Start a local proof server (optional)</div>

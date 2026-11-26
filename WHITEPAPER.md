@@ -12,7 +12,7 @@
 
 This document distinguishes the Horizon **design** from the **current implementation**.
 
-The Compact contract source, compiled keys, ZKIR, wallet connector, and live indexer reads are real. The browser application currently uses a local `localStorage` simulator, does not call compiled circuits, and does not submit on-chain transactions. Earlier documents advertised a verified deployment and prover benchmarks that could not be reproduced. Those claims have been removed.
+The Compact contract source, compiled keys, ZKIR, wallet connector, live indexer reads, and a Midnight.js 5 production client are real. The client is hard-gated behind an independently verified deployment record; because no deployment exists, it refuses to attach and no circuit call or transaction is submitted. The browser application exposes a local `localStorage` simulator only through explicit demo mode. Earlier documents advertised a verified deployment and prover benchmarks that could not be reproduced. Those claims have been removed.
 
 No part of this document should be read as a statement that Horizon is audited, mainnet-ready, or safe for real funds.
 
@@ -24,7 +24,7 @@ Decentralized lending protocols generally require overcollateralization because 
 
 Horizon proposes a zero-knowledge underwriting model for Midnight's dual-ledger architecture. Borrowers keep income, debt, and derived ratios in a shielded witness domain. A Compact circuit enforces lender-published thresholds and publishes only the resulting state transition and a commitment. Lenders can verify eligibility as a boolean guarantee without observing the underlying numbers.
 
-The repository already contains a substantive Compact contract with five circuits and real in-circuit inequality assertions. Remaining work includes on-chain client integration, compatible commitment generation, authoritative time, token custody, repayment economics, tests, and independently verified deployment.
+The repository already contains a substantive Compact contract with five circuits, real in-circuit inequality assertions, and a deployment-gated client with wrappers for all five circuits. Remaining work includes authoritative time, token custody, repayment economics, real deploy/proof submission, integration tests against a live deployment, and independently verified deployment.
 
 ---
 
@@ -74,7 +74,7 @@ Midnight Network
   └── indexer / explorer
 ```
 
-The current prototype implements the wallet connector, indexer reads, and contract compilation artifacts. The circuit-call path from the browser to the ledger is not yet complete.
+The current prototype implements the wallet connector, indexer reads, contract compilation artifacts, artifact serving with a pinned manifest hash, and a production client with circuit-call wrappers. The circuit-call path is gated off until a deployment is independently verified; the visible interactive protocol workflow is explicitly demo mode.
 
 ### 2.2 Public and private state
 
@@ -91,7 +91,7 @@ The current prototype implements the wallet connector, indexer reads, and contra
 
 ### 2.3 Privacy boundary
 
-The intended guarantee is that raw financial values remain in the witness and are never published. Today's simulator keeps them in browser memory and `localStorage`; it does not transmit them. This is a property of the demo's design, not evidence of a deployed zero-knowledge system.
+The intended guarantee is that raw financial values remain in the witness and are never published. The demo keeps them in browser memory and `localStorage`; it does not transmit them. The production client prepares the witness in a password-protected browser-local store and relies on the Compact circuit to compute `persistentHash<FinancialSnapshot>`; it cannot be reached without a verified deployment. Neither path is evidence of a deployed zero-knowledge system today.
 
 ---
 
@@ -113,7 +113,7 @@ $$
 C_{\mathcal{S}} = \operatorname{persistentHash}(\mathcal{S})
 $$
 
-**Implementation note:** the current browser simulator computes a SHA-256 digest of a colon-delimited string. This is incompatible with the Compact commitment. Before on-chain integration, the client must derive commitments using the same Compact runtime hashing used by the circuit.
+**Implementation note:** the demo simulator computes a SHA-256 digest of a colon-delimited string. This is incompatible with the Compact commitment and is shown only in demo mode. The production client passes the raw snapshot to the contract's witness; the circuit computes `persistentHash<FinancialSnapshot>` and stores that commitment. No production commitment has been broadcast because no deployment is verified.
 
 ### 3.2 Non-divisive inequalities
 
@@ -234,8 +234,8 @@ The Compact source contains real assertions for the underwriting inequalities. T
 * Snapshot registration does not authenticate the borrower identifier.
 * Pool parameter bounds are incomplete.
 * Repayment and liquidation economics are incomplete.
-* The browser does not yet execute the compiled contract.
-* There is no automated test suite or third-party audit.
+* The browser cannot execute the compiled contract until a verified deployment exists.
+* Automated integrity, gating, and script checks exist in `tests/` and CI, but there is no live-deployment integration suite and no third-party audit.
 
 ### 6.3 Deployment verification
 
@@ -253,11 +253,13 @@ The verifier queries the live Midnight Preview indexer and fails if the claimed 
 
 ### Phase 1 — Integrity and client integration
 
-* Keep simulated state behind an explicit demo flag.
-* Integrate compiled contract bindings with a real witness provider.
-* Use Compact-compatible commitments in the client.
-* Replace simulated proving with real circuit calls.
-* Add automated circuit and integration tests.
+* [x] Keep simulated state behind an explicit demo flag.
+* [x] Integrate compiled contract bindings with a password-protected witness provider.
+* [x] Use Compact-compatible commitments in the production client path (the circuit computes the hash).
+* [x] Add circuit wrappers behind a verified-deployment gate.
+* [x] Add automated artifact, gating, and script checks with CI.
+* [ ] Replace simulated demo proving with production circuit calls against a verified deployment.
+* [ ] Add live-deployment integration tests.
 
 ### Phase 2 — Protocol correctness
 
@@ -277,7 +279,7 @@ The verifier queries the live Midnight Preview indexer and fails if the claimed 
 
 ## Conclusion
 
-Horizon's core idea and Compact contract are real and worth preserving. The project is not yet a production lending protocol. The path to mainnet is to connect the genuine contract and proving artifacts to a real client, remove simulated claims from the production path, fix the protocol-level gaps, and let independently verified evidence support every public claim.
+Horizon's core idea, Compact contract, compiled artifacts, and deployment-gated client are real and worth preserving. The project is not yet a production lending protocol. The path to mainnet is to deploy and independently verify the contract, exercise the client wrappers against that deployment, fix the protocol-level gaps, and let independently verified evidence support every public claim.
 
 ---
 

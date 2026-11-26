@@ -318,7 +318,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
           <div className="p-4 rounded-2xl bg-[#f5f5f0] border border-[#eaeae5] text-xs text-[#525f6c] leading-relaxed flex items-start gap-3">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-[#11161a]">Zero Data Leakage Invariant:</strong> Raw figures are evaluated strictly inside client browser RAM. Only the 256-bit salted hash commitment is anchored on Midnight.
+              <strong className="text-[#11161a]">Zero Data Leakage Invariant:</strong> Raw figures stay in browser state. This demo records a simulated SHA-256 commitment locally; the on-chain circuit uses <code>persistentHash&lt;FinancialSnapshot&gt;</code>.
             </div>
           </div>
 
@@ -411,7 +411,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               {previewCommitment}
             </div>
             <div className="text-[10px] text-[#707e8c] font-sans">
-              Computed locally via <code>persistentHash&lt;FinancialSnapshot&gt;(witness)</code>.
+              Demo: local SHA-256 digest. Production circuit: <code>persistentHash&lt;FinancialSnapshot&gt;(witness)</code>.
             </div>
           </div>
 
@@ -466,10 +466,10 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               <Cpu className="w-4 h-4" />
               <span>
                 {submittingSnapshot
-                  ? 'Submitting Commitment to Midnight...'
+                  ? 'Recording Demo Commitment...'
                   : currentCommitment
-                  ? 'Update Registered Commitment Hash'
-                  : 'Anchor Financial Commitment on Midnight'}
+                  ? 'Update Demo Commitment Hash'
+                  : 'Anchor Demo Commitment Locally'}
               </span>
             </button>
             {currentCommitment && (
@@ -619,13 +619,13 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
             </div>
           )}
 
-          {/* Real Progressive Prover Status */}
+          {/* Simulated progressive status — no proof server is contacted in demo mode */}
           {provingLoan && (
             <div className="p-5 rounded-2xl bg-[#f5f5f0] border border-[#d5d5cf] text-xs space-y-3 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-bold text-[#11161a]">
                   <Sparkles className="w-4 h-4 text-cyan-600 animate-spin" />
-                  <span>Midnight Proof Server Proving Loop</span>
+                  <span>Simulated Proving Progress (No Server Call)</span>
                 </div>
                 <div className="font-mono text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg flex items-center gap-1.5 font-bold">
                   <Timer className="w-3.5 h-3.5" />
@@ -644,7 +644,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               <div className="p-3 rounded-xl bg-white border border-[#d5d5cf] font-mono text-[11px] text-[#11161a]">
                 <div className="text-[10px] text-[#707e8c] uppercase font-semibold mb-1 flex items-center gap-1">
                   <Terminal className="w-3 h-3 text-[#11161a]" />
-                  <span>Prover Engine Telemetry:</span>
+                  <span>Demo Progress Telemetry:</span>
                 </div>
                 {proofStep}
               </div>
@@ -660,7 +660,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               <Sparkles className="w-4 h-4" />
               <span>
                 {provingLoan
-                  ? `Generating Proof (${provingDurationMs} ms)...`
+                  ? `Simulating Proof Progress (${provingDurationMs} ms)...`
                   : !currentCommitment
                   ? 'Commit Snapshot First (Step 1)'
                   : !allCriteriaMet
