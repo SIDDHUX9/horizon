@@ -9,9 +9,9 @@ export interface DeploymentRecord {
   blockHeight?: number | null;
   timestamp?: string;
   verification?: {
-    verifiedOnChain?: boolean;
-    contractFoundOnChain?: boolean;
-    transactionFoundOnChain?: boolean;
+    verifiedOnChain: boolean;
+    contractFoundOnChain: boolean;
+    transactionFoundOnChain: boolean;
     checkedAt?: string;
     indexer?: string;
   };
@@ -38,9 +38,13 @@ export function assertVerifiedDeployment(networkId: string): string {
       'the canonical deployment record is not confirmed'
     );
   }
-  if (record.verification?.verifiedOnChain !== true) {
+  if (
+    record.verification?.verifiedOnChain !== true ||
+    record.verification.contractFoundOnChain !== true ||
+    record.verification.transactionFoundOnChain !== true
+  ) {
     throw new DeploymentNotVerifiedError(
-      'independent indexer verification is missing from the record'
+      'independent indexer verification of both the contract and deploy transaction is missing'
     );
   }
   if (!record.contractAddress || !/^[0-9a-fA-F]{64}$/.test(record.contractAddress)) {

@@ -15,6 +15,12 @@ test('canonical record is honest about deployment status', () => {
   assert.equal(record.deployTxHash, null);
 });
 
+test('deployment gate requires both on-chain findings', () => {
+  const source = fs.readFileSync(path.resolve(dir, '../src/services/deploymentGate.ts'), 'utf8');
+  assert.match(source, /record\.verification\.contractFoundOnChain !== true/);
+  assert.match(source, /record\.verification\.transactionFoundOnChain !== true/);
+});
+
 test('record never contains the retracted fake hashes', () => {
   const serialized = JSON.stringify(record).toLowerCase();
   const retracted = [
