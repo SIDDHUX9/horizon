@@ -82,7 +82,6 @@ export const App: React.FC = () => {
   const [protocolClient, setProtocolClient] = useState<MidnightProtocolClient | null>(null);
   const [pendingProtocolSession, setPendingProtocolSession] = useState<LaceConnectedSession | null>(null);
   const [privateStatePassword, setPrivateStatePassword] = useState('');
-  const privateStatePasswordRef = React.useRef<string | null>(null);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [isUnlockingPrivateState, setIsUnlockingPrivateState] = useState(false);
   const [privateStateError, setPrivateStateError] = useState<string | null>(null);
@@ -224,7 +223,6 @@ export const App: React.FC = () => {
       return null;
     });
     setPendingProtocolSession(null);
-    privateStatePasswordRef.current = null;
     setPrivateStatePassword('');
     setPasswordModalOpen(false);
     setPrivateStateError(null);
@@ -258,7 +256,6 @@ export const App: React.FC = () => {
         accountId: pendingProtocolSession.unshieldedAddress,
         privateStatePasswordProvider: async () => password,
       });
-      privateStatePasswordRef.current = password;
       setProtocolClient((previous) => {
         previous?.dispose();
         return client;
