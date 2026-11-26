@@ -25,7 +25,14 @@ export interface NetworkStats {
   network: string;
 }
 
-const INDEXER_BASE = 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
+/**
+ * Public indexer endpoint. Override for preprod/mainnet with VITE_INDEXER_URL;
+ * wallet-provided endpoints remain authoritative for contract calls.
+ */
+const INDEXER_BASE = (
+  import.meta.env.VITE_INDEXER_URL ||
+  'https://preview-service-v2-01.midnightexplorer.com/api/v1'
+).replace(/\/$/, '');
 
 export class MidnightLiveIndexer {
   static async getLatestBlocks(limit = 5): Promise<MidnightBlock[]> {

@@ -147,7 +147,7 @@ npm run dev
 
 Open <http://localhost:5173>. The default experience is **production mode**: no verified deployment exists, protocol forms are replaced by an offline panel, and circuit calls are disabled. To use the browser-local demonstration, add `?demo=1` to the URL or set `VITE_DEMO_MODE=true` in a local `.env` file (see `.env.example`). Demo mode never submits transactions.
 
-Compiled artifacts are served under `/contracts/` by the Vite dev middleware and copied into `dist/contracts/` during `npm run build`, so the production client can load the exact pinned manifest, keys, and ZKIR.
+Compiled artifacts are served under `/contracts/` by the Vite dev middleware and copied into `dist/contracts/` during `npm run build`, so the production client can load the exact pinned manifest, keys, and ZKIR. Browser-side chain reads default to the Preview indexer; set `VITE_INDEXER_URL` in a local `.env` for another network. Contract calls continue to use the indexer supplied by the connected wallet.
 
 ### Verify the deployment record
 
