@@ -54,7 +54,9 @@ export async function verifyDeploymentClaim({
         transactions(offset: { hash: $txHash }) {
           hash
           block {
+            hash
             height
+            timestamp
           }
         }
         contractAction(
@@ -89,6 +91,8 @@ export async function verifyDeploymentClaim({
       contractDeployedByTransaction:
         sameHex(action?.address, contractAddress) && sameHex(action?.transaction?.hash, deployTxHash),
       blockHeight: tx?.block?.height ?? null,
+      blockHash: tx?.block?.hash ?? null,
+      timestamp: tx?.block?.timestamp ?? null,
     };
   }
 
@@ -120,5 +124,7 @@ export async function verifyDeploymentClaim({
     transactionFoundOnChain,
     contractDeployedByTransaction,
     blockHeight: txData?.blockHeight ?? null,
+    blockHash: txData?.blockHash ?? null,
+    timestamp: txData?.timestamp ?? null,
   };
 }

@@ -5,6 +5,7 @@ import {
   sameHex,
   verifyDeploymentClaim,
 } from '../scripts/lib/deployment-verification.js';
+import { buildConfirmedRecord } from '../scripts/confirm-deployment.js';
 
 const CONTRACT = 'a'.repeat(64);
 const TX = 'b'.repeat(64);
@@ -26,7 +27,12 @@ test('GraphQL verification requires deploy action linkage, not just two matches'
     return jsonResponse({
       data: {
         contract: { address: `0x${CONTRACT}` },
-        transactions: [{ hash: `0x${TX}`, block: { height: 123 } }],
+        transactions: [
+          {
+            hash: `0x${TX}`,
+            block: { hash: 'd'.repeat(64), height: 123, timestamp: 1790000000000 },
+          },
+        ],
         contractAction: {
           address: `0x${CONTRACT}`,
           transaction: { hash: `0x${TX}` },
@@ -50,6 +56,8 @@ test('GraphQL verification requires deploy action linkage, not just two matches'
     transactionFoundOnChain: true,
     contractDeployedByTransaction: true,
     blockHeight: 123,
+    blockHash: 'd'.repeat(64),
+    timestamp: 1790000000000,
   });
   assert.equal(calls[0].options.headers.project_id, 'test-project-id');
 });
@@ -79,6 +87,28 @@ test('GraphQL verification rejects an unrelated transaction', async () => {
   assert.equal(result.contractFoundOnChain, true);
   assert.equal(result.transactionFoundOnChain, true);
   assert.equal(result.contractDeployedByTransaction, false);
+});
+
+test('confirmed record is derived only from a verified claim', () => {
+  const record = buildConfirmedRecord(
+    { network: 'preview', circuits: ['createLendingPool'], verifiedOnChain: false },
+    {
+      source: 'indexer-graphql',
+      blockHeight: 10,
+      blockHash: 'd'.repeat(64),
+      timestamp: 1790000000000,
+    },
+    `0x${CONTRACT}`,
+    `0x${TX}`
+  );
+
+  assert.equal(record.deploymentStatus, 'confirmed');
+  assert.equal(record.verifiedOnChain, true);
+  assert.equal(record.contractAddress, `0x${CONTRACT}`);
+  assert.equal(record.deployTxHash, `0x${TX}`);
+  assert.equal(record.blockHeight, 10);
+  assert.equal(record.verification.contractDeployedByTransaction, true);
+  assert.deepEqual(record.circuits, ['createLendingPool']);
 });
 
 test('REST verification finds deploy linkage in transaction contractActions', async () => {

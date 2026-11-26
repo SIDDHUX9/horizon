@@ -11,6 +11,7 @@
     "preflight:proof": "node scripts/preflight-proof-server.js",
     "preflight:deploy": "node scripts/deploy-midnight.js",
     "verify:deployment": "node scripts/verify-deployment.js",
+    "confirm:deployment": "node scripts/confirm-deployment.js",
     "verify:artifacts": "node scripts/verify-artifacts.js",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.js",
