@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatNight } from '../contracts/horizonSimulator';
 import { ProtocolRoute } from '../services/router';
+import { RuntimeMode } from '../services/runtimeMode';
 
 interface HeaderProps {
   activeTab: string;
@@ -26,6 +27,7 @@ interface HeaderProps {
   onAdvanceTime: (days: number) => void;
   onResetDemo: () => void;
   currentTimeStr: string;
+  runtimeMode: RuntimeMode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   onAdvanceTime,
   onResetDemo,
   currentTimeStr,
+  runtimeMode,
 }) => {
   const navItems = [
     { id: 'landing', label: 'Home', icon: Layers },
@@ -79,7 +82,13 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden sm:flex items-center gap-2 text-[11px] font-medium text-[#707e8c] shrink-0">
             <span>Preview Network</span>
             <span className="text-[#d5d5cf]">•</span>
-            <span className="text-amber-700 font-semibold font-mono">Demo State</span>
+            <span
+              className={`font-semibold font-mono ${
+                runtimeMode === 'demo' ? 'text-amber-700' : 'text-rose-700'
+              }`}
+            >
+              {runtimeMode === 'demo' ? 'Demo State' : 'Protocol Offline'}
+            </span>
           </div>
         </div>
       </div>

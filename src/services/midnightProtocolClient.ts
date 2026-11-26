@@ -19,11 +19,11 @@ import {
   type Ledger9WalletProvider,
   type MidnightProviders,
 } from '@midnight-ntwrk/midnight-js-types';
-import { ShieldedCoinPublicKey, ShieldedEncryptionPublicKey, MidnightBech32m } from '@midnightntwrk/wallet-sdk-address-format';
 import { Transaction } from '@midnightntwrk/ledger-v9';
-import type { ConnectedAPI, Configuration, ProvingProvider } from '@midnight-ntwrk/dapp-connector-api';
+import type { ConnectedAPI, Configuration } from '@midnight-ntwrk/dapp-connector-api';
 import { Contract } from '../contracts/compiled/contract/index.js';
 import { assertVerifiedDeployment } from './deploymentGate';
+import { decodeShieldedKey } from './ids';
 
 // SHA-256 of compiler/contract-manifest.json produced by compactc 0.36.1.
 // Pinned here so a coordinated substitution of artifacts + manifest is refused.
@@ -84,18 +84,6 @@ function makeCompiledContract() {
       },
     })
   );
-}
-
-function decodeShieldedKey(value: string, kind: 'coin' | 'encryption', networkId: string): string {
-  if (/^[0-9a-fA-F]{64}$/.test(value)) return value.toLowerCase();
-  try {
-    const parsed = MidnightBech32m.parse(value);
-    return kind === 'coin'
-      ? ShieldedCoinPublicKey.codec.decode(networkId, parsed).toHexString()
-      : ShieldedEncryptionPublicKey.codec.decode(networkId, parsed).toHexString();
-  } catch {
-    throw new Error(`Wallet returned an invalid ${kind} public key; expected hex or Bech32m.`);
-  }
 }
 
 /**
@@ -340,12 +328,6 @@ export class MidnightProtocolClient {
   dispose(): void {
     void (this.providers.publicDataProvider as { dispose?: () => Promise<void> }).dispose?.();
   }
-}
-
-function toBytes32(hex: string): Uint8Array {
-  const clean = hex.replace(/^0x/, '');
-  if (!/^[0-9a-fA-F]{64}$/.test(clean)) throw new Error('Invalid 32-byte value');
-  return fromHex(clean);
 }
 
 function fromHex(hex: string): Uint8Array {

@@ -16,6 +16,8 @@ import { WhitepaperPage } from './components/WhitepaperPage';
 import { WalletModal } from './components/WalletModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DemoModeBanner } from './components/DemoModeBanner';
+import { PrivateStatePasswordModal } from './components/PrivateStatePasswordModal';
+import { ProtocolOfflinePanel } from './components/ProtocolOfflinePanel';
 import { 
   getAvailableMidnightWallets, 
   connectLaceWallet, 
@@ -23,6 +25,14 @@ import {
   LaceConnectedSession
 } from './services/laceWallet';
 import { MidnightLiveIndexer } from './services/midnightLiveIndexer';
+import { getRuntimeMode, assertDemoMode, RuntimeMode } from './services/runtimeMode';
+import { isDeploymentVerified } from './services/deploymentGate';
+import type { MidnightProtocolClient } from './services/midnightProtocolClient';
+import {
+  addressToBytes32,
+  randomBytes32,
+  hexToBytes,
+} from './services/ids';
 import { 
   getCurrentRoute, 
   navigateToRoute, 
@@ -37,7 +47,21 @@ import {
   ExplorerTransaction 
 } from './types/horizon';
 
+/** Wallet configuration reports display names; the deployment record uses canonical IDs. */
+function toCanonicalNetworkId(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.includes('mainnet')) return 'mainnet';
+  if (normalized.includes('preprod')) return 'preprod';
+  if (normalized.includes('preview')) return 'preview';
+  return normalized;
+}
+
+function nowSeconds(): bigint {
+  return BigInt(Math.floor(Date.now() / 1000));
+}
+
 export const App: React.FC = () => {
+  const runtimeMode: RuntimeMode = getRuntimeMode();
   const [activeTab, setActiveTab] = useState<ProtocolRoute>(() => getCurrentRoute());
   const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [userAddress, setUserAddress] = useState<string | null>(null);
@@ -55,13 +79,33 @@ export const App: React.FC = () => {
   const [laceError, setLaceError] = useState<string | null>(null);
   const [laceSession, setLaceSession] = useState<LaceConnectedSession | null>(null);
 
-  // Protocol state synced from horizon simulator
-  const [pools, setPools] = useState<LendingPool[]>(() => horizon.getPools());
-  const [loans, setLoans] = useState<Loan[]>(() => horizon.getLoans());
-  const [repayments, setRepayments] = useState<RepaymentEvent[]>(() => horizon.getRepayments());
-  const [transactions, setTransactions] = useState<ExplorerTransaction[]>(() => horizon.getTransactions());
-  const [blockHeight, setBlockHeight] = useState<number>(() => horizon.getBlockHeight());
-  const [currentTime, setCurrentTime] = useState<bigint>(() => horizon.getCurrentTime());
+  const [protocolClient, setProtocolClient] = useState<MidnightProtocolClient | null>(null);
+  const [pendingProtocolSession, setPendingProtocolSession] = useState<LaceConnectedSession | null>(null);
+  const [privateStatePassword, setPrivateStatePassword] = useState('');
+  const privateStatePasswordRef = React.useRef<string | null>(null);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [isUnlockingPrivateState, setIsUnlockingPrivateState] = useState(false);
+  const [privateStateError, setPrivateStateError] = useState<string | null>(null);
+
+  // In production mode protocol state is never read from the demo localStorage ledger.
+  const [pools, setPools] = useState<LendingPool[]>(() =>
+    runtimeMode === 'demo' ? horizon.getPools() : []
+  );
+  const [loans, setLoans] = useState<Loan[]>(() =>
+    runtimeMode === 'demo' ? horizon.getLoans() : []
+  );
+  const [repayments, setRepayments] = useState<RepaymentEvent[]>(() =>
+    runtimeMode === 'demo' ? horizon.getRepayments() : []
+  );
+  const [transactions, setTransactions] = useState<ExplorerTransaction[]>(() =>
+    runtimeMode === 'demo' ? horizon.getTransactions() : []
+  );
+  const [blockHeight, setBlockHeight] = useState<number>(() =>
+    runtimeMode === 'demo' ? horizon.getBlockHeight() : 0
+  );
+  const [currentTime, setCurrentTime] = useState<bigint>(() =>
+    runtimeMode === 'demo' ? horizon.getCurrentTime() : nowSeconds()
+  );
 
   const [currentCommitment, setCurrentCommitment] = useState<string | undefined>(undefined);
 
@@ -140,7 +184,24 @@ export const App: React.FC = () => {
       setWalletConnected(true);
       setUserNightBalance(session.nightBalance ?? 0n);
       setWalletModalOpen(false);
-      showToast(`Connected to ${session.walletName}: ${session.unshieldedAddress.slice(0, 8)}...${session.unshieldedAddress.slice(-6)}`, 'success');
+
+      const canonicalNetwork = toCanonicalNetworkId(
+        session.config?.networkId || selectedNetwork
+      );
+      if (runtimeMode === 'production' && isDeploymentVerified(canonicalNetwork)) {
+        setPendingProtocolSession(session);
+        setPrivateStatePassword('');
+        setPrivateStateError(null);
+        setPasswordModalOpen(true);
+        showToast('Wallet connected. Unlock private state to attach the verified contract client.', 'info');
+      } else if (runtimeMode === 'production') {
+        showToast(
+          `Wallet connected, but no verified Horizon deployment exists on ${canonicalNetwork}. Circuit calls remain disabled.`,
+          'error'
+        );
+      } else {
+        showToast(`Connected to ${session.walletName}: ${session.unshieldedAddress.slice(0, 8)}...${session.unshieldedAddress.slice(-6)}`, 'success');
+      }
     } catch (err: any) {
       setLaceError(err.message || 'Failed to connect to Midnight Lace wallet.');
     } finally {
@@ -158,10 +219,74 @@ export const App: React.FC = () => {
     setWalletConnected(false);
     setUserNightBalance(0n);
     setWalletModalOpen(false);
-    showToast('Wallet disconnected.', 'info');
+    setProtocolClient((client) => {
+      client?.dispose();
+      return null;
+    });
+    setPendingProtocolSession(null);
+    privateStatePasswordRef.current = null;
+    setPrivateStatePassword('');
+    setPasswordModalOpen(false);
+    setPrivateStateError(null);
+    showToast('Wallet disconnected; private-state password cleared.', 'info');
+  };
+
+  const unlockPrivateState = async () => {
+    if (!pendingProtocolSession) return;
+    if (privateStatePassword.length === 0) {
+      setPrivateStateError('A private-state password is required.');
+      return;
+    }
+    setIsUnlockingPrivateState(true);
+    setPrivateStateError(null);
+    try {
+      const canonicalNetwork = toCanonicalNetworkId(
+        pendingProtocolSession.config?.networkId || selectedNetwork
+      );
+      if (!isDeploymentVerified(canonicalNetwork)) {
+        throw new Error(`No verified Horizon deployment exists on ${canonicalNetwork}.`);
+      }
+      if (!pendingProtocolSession.config?.indexerUri) {
+        throw new Error('The wallet did not provide an indexer configuration.');
+      }
+      const password = privateStatePassword;
+      const { MidnightProtocolClient } = await import('./services/midnightProtocolClient');
+      const client = await MidnightProtocolClient.connect({
+        walletApi: pendingProtocolSession.api,
+        networkId: canonicalNetwork,
+        walletConfig: pendingProtocolSession.config,
+        accountId: pendingProtocolSession.unshieldedAddress,
+        privateStatePasswordProvider: async () => password,
+      });
+      privateStatePasswordRef.current = password;
+      setProtocolClient((previous) => {
+        previous?.dispose();
+        return client;
+      });
+      setPasswordModalOpen(false);
+      setPendingProtocolSession(null);
+      setPrivateStatePassword('');
+      showToast('Private state unlocked and verified contract client attached.', 'success');
+    } catch (err: any) {
+      setPrivateStateError(err?.message || 'Could not attach the verified contract client.');
+    } finally {
+      setIsUnlockingPrivateState(false);
+    }
+  };
+
+  const requireProtocolClient = async (): Promise<MidnightProtocolClient> => {
+    if (!protocolClient) {
+      setPasswordModalOpen(Boolean(pendingProtocolSession));
+      setWalletModalOpen(!pendingProtocolSession);
+      throw new Error(
+        'Connect a Midnight wallet and unlock private state before calling a circuit.'
+      );
+    }
+    return protocolClient;
   };
 
   const refreshState = () => {
+    assertDemoMode('Demo ledger refresh', runtimeMode);
     setPools(horizon.getPools());
     setLoans(horizon.getLoans());
     setRepayments(horizon.getRepayments());
@@ -173,25 +298,38 @@ export const App: React.FC = () => {
     }
   };
 
-  // Periodic clock update
+  // Periodic clock update. Production time is the real clock, never the demo offset.
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(horizon.getCurrentTime());
-    }, 5000);
+    if (runtimeMode !== 'demo') {
+      setCurrentTime(nowSeconds());
+      const timer = setInterval(() => setCurrentTime(nowSeconds()), 5000);
+      return () => clearInterval(timer);
+    }
+    const timer = setInterval(() => setCurrentTime(horizon.getCurrentTime()), 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [runtimeMode]);
 
   const handleAdvanceTime = (days: number) => {
-    horizon.advanceTime(days * 86400);
-    refreshState();
-    showToast(`Fast-forwarded protocol clock by +${days} days (Block #${horizon.getBlockHeight()})`, 'info');
+    try {
+      assertDemoMode('Protocol clock controls', runtimeMode);
+      horizon.advanceTime(days * 86400);
+      refreshState();
+      showToast(`Fast-forwarded protocol clock by +${days} days (Block #${horizon.getBlockHeight()})`, 'info');
+    } catch (err: any) {
+      showToast(err?.message || 'Clock controls are unavailable.', 'error');
+    }
   };
 
   const handleResetDemo = () => {
-    horizon.resetToDemo();
-    setUserNightBalance(laceSession?.nightBalance ?? 0n);
-    refreshState();
-    showToast('Protocol reset to default demonstration state', 'info');
+    try {
+      assertDemoMode('Demo reset', runtimeMode);
+      horizon.resetToDemo();
+      setUserNightBalance(laceSession?.nightBalance ?? 0n);
+      refreshState();
+      showToast('Protocol reset to default demonstration state', 'info');
+    } catch (err: any) {
+      showToast(err?.message || 'Demo reset is unavailable.', 'error');
+    }
   };
 
   // CIRCUIT 1: Create Pool
@@ -209,6 +347,24 @@ export const App: React.FC = () => {
       throw new Error('Midnight Lace wallet not connected.');
     }
 
+    if (runtimeMode === 'production') {
+      const client = await requireProtocolClient();
+      const canonicalNetwork = toCanonicalNetworkId(networkId || selectedNetwork);
+      const result = await client.createLendingPool({
+        pool_id: randomBytes32(),
+        lender: addressToBytes32(userAddress, canonicalNetwork),
+        deposit_amount: params.deposit_amount,
+        min_income: params.min_income,
+        max_debt_to_income_bps: BigInt(params.max_debt_to_income_bps),
+        min_collateral_ratio_bps: BigInt(params.min_collateral_ratio_bps),
+        interest_rate_bps: BigInt(params.interest_rate_bps),
+        term_duration: params.term_duration,
+      });
+      showToast(`On-chain pool creation submitted (tx ${result.txId}). Wallet balances are not adjusted by the contract client.`, 'success');
+      return;
+    }
+    assertDemoMode('Simulated pool creation', runtimeMode);
+
     const { pool } = await horizon.createLendingPool({
       ...params,
       lender: userAddress,
@@ -225,6 +381,24 @@ export const App: React.FC = () => {
       showToast('Midnight Lace Wallet required to submit financial snapshot.', 'error');
       throw new Error('Midnight Lace wallet not connected.');
     }
+
+    if (runtimeMode === 'production') {
+      const client = await requireProtocolClient();
+      const canonicalNetwork = toCanonicalNetworkId(networkId || selectedNetwork);
+      await client.prepareSnapshot({
+        actual_income: snapshot.actual_income,
+        existing_debt: snapshot.existing_debt,
+        computed_dti_ratio: BigInt(snapshot.computed_dti_ratio),
+        computed_collateral_ratio: BigInt(snapshot.computed_collateral_ratio),
+        salt: hexToBytes(snapshot.salt),
+      });
+      const result = await client.submitFinancialSnapshot({
+        borrower: addressToBytes32(borrower || userAddress, canonicalNetwork),
+      });
+      showToast(`Snapshot commitment submitted on-chain (tx ${result.txId}).`, 'success');
+      return result.txId;
+    }
+    assertDemoMode('Simulated snapshot submission', runtimeMode);
 
     const { commitment } = await horizon.submitFinancialSnapshot(borrower, snapshot);
     refreshState();
@@ -245,6 +419,43 @@ export const App: React.FC = () => {
       showToast('Midnight Lace Wallet required to request loan.', 'error');
       throw new Error('Midnight Lace wallet not connected.');
     }
+
+    if (runtimeMode === 'production') {
+      const client = await requireProtocolClient();
+      const canonicalNetwork = toCanonicalNetworkId(networkId || selectedNetwork);
+      await client.prepareSnapshot({
+        actual_income: params.snapshot_witness.actual_income,
+        existing_debt: params.snapshot_witness.existing_debt,
+        computed_dti_ratio: BigInt(params.snapshot_witness.computed_dti_ratio),
+        computed_collateral_ratio: BigInt(params.snapshot_witness.computed_collateral_ratio),
+        salt: hexToBytes(params.snapshot_witness.salt),
+      });
+      const result = await client.requestLoan({
+        loan_id: randomBytes32(),
+        pool_id: hexToBytes(params.pool_id),
+        borrower: addressToBytes32(userAddress, canonicalNetwork),
+        requested_amount: params.requested_amount,
+        collateral_deposit: params.collateral_deposit,
+        current_time: nowSeconds(),
+      });
+      showToast(
+        `Loan request submitted on-chain (tx ${result.txId}). Check the indexer before treating it as settled.`,
+        'success'
+      );
+      return {
+        circuit_name: 'requestLoan',
+        witness_commitment: 'private witness held in encrypted local state',
+        prover_key: 'wallet DApp Connector prover',
+        verifier_key: 'registered contract verifier',
+        checks: [],
+        is_valid: true,
+        timestamp: Date.now(),
+        proof_hash: 'not exposed by DApp Connector',
+        tx_hash: result.txId,
+        onchain_confirmed: false,
+      };
+    }
+    assertDemoMode('Simulated loan request', runtimeMode);
 
     if (params.collateral_deposit > userNightBalance) {
       throw new Error(`Insufficient wallet balance to deposit collateral. You have ${formatNight(userNightBalance)}.`);
@@ -272,6 +483,21 @@ export const App: React.FC = () => {
       throw new Error('Midnight Lace wallet not connected.');
     }
 
+    if (runtimeMode === 'production') {
+      const client = await requireProtocolClient();
+      const canonicalNetwork = toCanonicalNetworkId(networkId || selectedNetwork);
+      const result = await client.repayLoan({
+        repayment_id: randomBytes32(),
+        loan_id: hexToBytes(loanId),
+        payer: addressToBytes32(userAddress, canonicalNetwork),
+        repay_amount: amount,
+        current_time: nowSeconds(),
+      });
+      showToast(`Repayment submitted on-chain (tx ${result.txId}). Settle status from the indexer before releasing collateral.`, 'info');
+      return false;
+    }
+    assertDemoMode('Simulated repayment', runtimeMode);
+
     const { loan, isFullyRepaid } = await horizon.repayLoan({
       loan_id: loanId,
       payer: userAddress,
@@ -296,6 +522,19 @@ export const App: React.FC = () => {
       showToast('Midnight Lace Wallet required to trigger liquidation.', 'error');
       throw new Error('Midnight Lace wallet not connected.');
     }
+
+    if (runtimeMode === 'production') {
+      const client = await requireProtocolClient();
+      const canonicalNetwork = toCanonicalNetworkId(networkId || selectedNetwork);
+      const result = await client.liquidate({
+        loan_id: hexToBytes(loanId),
+        liquidator: addressToBytes32(userAddress, canonicalNetwork),
+        current_time: nowSeconds(),
+      });
+      showToast(`Liquidation submitted on-chain (tx ${result.txId}). Confirm the resulting state on the indexer.`, 'info');
+      return;
+    }
+    assertDemoMode('Simulated liquidation', runtimeMode);
 
     await horizon.liquidate({
       loan_id: loanId,
@@ -343,6 +582,21 @@ export const App: React.FC = () => {
           selectedNetwork={selectedNetwork}
           onSelectNetwork={setSelectedNetwork}
           onDisconnect={handleDisconnectLace}
+        />
+
+        <PrivateStatePasswordModal
+          isOpen={passwordModalOpen}
+          password={privateStatePassword}
+          onPasswordChange={setPrivateStatePassword}
+          onSubmit={unlockPrivateState}
+          onCancel={() => {
+            setPasswordModalOpen(false);
+            setPrivateStatePassword('');
+            setPrivateStateError(null);
+          }}
+          isUnlocking={isUnlockingPrivateState}
+          errorMessage={privateStateError}
+          accountId={pendingProtocolSession?.unshieldedAddress}
         />
 
         {toast && (
@@ -393,6 +647,21 @@ export const App: React.FC = () => {
           onDisconnect={handleDisconnectLace}
         />
 
+        <PrivateStatePasswordModal
+          isOpen={passwordModalOpen}
+          password={privateStatePassword}
+          onPasswordChange={setPrivateStatePassword}
+          onSubmit={unlockPrivateState}
+          onCancel={() => {
+            setPasswordModalOpen(false);
+            setPrivateStatePassword('');
+            setPrivateStateError(null);
+          }}
+          isUnlocking={isUnlockingPrivateState}
+          errorMessage={privateStateError}
+          accountId={pendingProtocolSession?.unshieldedAddress}
+        />
+
         {toast && (
           <div className="fixed bottom-6 right-6 z-50 animate-fadeIn">
             <div
@@ -430,6 +699,7 @@ export const App: React.FC = () => {
         onAdvanceTime={handleAdvanceTime}
         onResetDemo={handleResetDemo}
         currentTimeStr={currentTimeStr}
+        runtimeMode={runtimeMode}
       />
 
       <WalletModal
@@ -451,50 +721,77 @@ export const App: React.FC = () => {
         onDisconnect={handleDisconnectLace}
       />
 
+      <PrivateStatePasswordModal
+        isOpen={passwordModalOpen}
+        password={privateStatePassword}
+        onPasswordChange={setPrivateStatePassword}
+        onSubmit={unlockPrivateState}
+        onCancel={() => {
+          setPasswordModalOpen(false);
+          setPrivateStatePassword('');
+          setPrivateStateError(null);
+        }}
+        isUnlocking={isUnlockingPrivateState}
+        errorMessage={privateStateError}
+        accountId={pendingProtocolSession?.unshieldedAddress}
+      />
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 sm:py-10">
         <ErrorBoundary>
           {activeTab === 'pitch' && <DualLedgerPitch onNavigate={handleNavigate} />}
 
-          {activeTab === 'lender' && (
-            <LenderHub
-              pools={pools}
-              onCreatePool={handleCreatePool}
-              onSelectPoolForBorrow={handleSelectPoolForBorrow}
-              userNightBalance={userNightBalance}
-            />
-          )}
+          {activeTab === 'lender' &&
+            (runtimeMode === 'demo' ? (
+              <LenderHub
+                pools={pools}
+                onCreatePool={handleCreatePool}
+                onSelectPoolForBorrow={handleSelectPoolForBorrow}
+                userNightBalance={userNightBalance}
+              />
+            ) : (
+              <ProtocolOfflinePanel circuit="createLendingPool" />
+            ))}
 
-          {activeTab === 'borrower' && (
-            <BorrowerStudio
-              pools={pools}
-              selectedPoolId={selectedPoolForBorrow}
-              onSnapshotSubmitted={handleSnapshotSubmitted}
-              onRequestLoan={handleRequestLoan}
-              userNightBalance={userNightBalance}
-              currentCommitment={currentCommitment}
-              borrowerAddress={userAddress || ''}
-            />
-          )}
+          {activeTab === 'borrower' &&
+            (runtimeMode === 'demo' ? (
+              <BorrowerStudio
+                pools={pools}
+                selectedPoolId={selectedPoolForBorrow}
+                onSnapshotSubmitted={handleSnapshotSubmitted}
+                onRequestLoan={handleRequestLoan}
+                userNightBalance={userNightBalance}
+                currentCommitment={currentCommitment}
+                borrowerAddress={userAddress || ''}
+              />
+            ) : (
+              <ProtocolOfflinePanel circuit="submitFinancialSnapshot / requestLoan" />
+            ))}
 
-          {activeTab === 'loans' && (
-            <LoanDetailTerminal
-              loans={loans}
-              repayments={repayments}
-              onRepayLoan={handleRepayLoan}
-              userNightBalance={userNightBalance}
-              currentTime={currentTime}
-            />
-          )}
+          {activeTab === 'loans' &&
+            (runtimeMode === 'demo' ? (
+              <LoanDetailTerminal
+                loans={loans}
+                repayments={repayments}
+                onRepayLoan={handleRepayLoan}
+                userNightBalance={userNightBalance}
+                currentTime={currentTime}
+              />
+            ) : (
+              <ProtocolOfflinePanel circuit="repayLoan" />
+            ))}
 
-          {activeTab === 'liquidate' && (
-            <LiquidationTerminal
-              loans={loans}
-              currentTime={currentTime}
-              onAdvanceTime={handleAdvanceTime}
-              onLiquidate={handleLiquidate}
-            />
-          )}
+          {activeTab === 'liquidate' &&
+            (runtimeMode === 'demo' ? (
+              <LiquidationTerminal
+                loans={loans}
+                currentTime={currentTime}
+                onAdvanceTime={handleAdvanceTime}
+                onLiquidate={handleLiquidate}
+              />
+            ) : (
+              <ProtocolOfflinePanel circuit="liquidate" />
+            ))}
 
           {activeTab === 'explorer' && (
             <TransparencyExplorer
