@@ -155,7 +155,7 @@ Compiled artifacts are served under `/contracts/` by the Vite dev middleware and
 npm run verify:deployment
 ```
 
-The command exits non-zero if a claimed address or transaction cannot be found on the live indexer.
+The command checks the contract, deployment transaction, **and** that the transaction deployed that contract. Set `MIDNIGHT_INDEXER_GRAPHQL` and `MIDNIGHT_INDEXER_PROJECT_ID` to use the authenticated official Midnight Indexer; otherwise it falls back to the public Explorer REST API. The command exits non-zero unless all three findings are confirmed.
 
 ### Local proof server (experimental)
 

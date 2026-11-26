@@ -15,10 +15,11 @@ test('canonical record is honest about deployment status', () => {
   assert.equal(record.deployTxHash, null);
 });
 
-test('deployment gate requires both on-chain findings', () => {
+test('deployment gate requires all on-chain findings including deploy linkage', () => {
   const source = fs.readFileSync(path.resolve(dir, '../src/services/deploymentGate.ts'), 'utf8');
   assert.match(source, /record\.verification\.contractFoundOnChain !== true/);
   assert.match(source, /record\.verification\.transactionFoundOnChain !== true/);
+  assert.match(source, /record\.verification\.contractDeployedByTransaction !== true/);
 });
 
 test('record never contains the retracted fake hashes', () => {

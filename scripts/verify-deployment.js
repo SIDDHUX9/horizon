@@ -1,7 +1,7 @@
-import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { verifyDeploymentClaim } from './lib/deployment-verification.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,38 +10,14 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const RECORD_PATH = path.resolve(ROOT_DIR, 'src/contracts/deployed-contract.json');
 const REPORT_PATH = path.resolve(ROOT_DIR, 'src/contracts/deployment-verification.json');
 const INDEXER = process.env.MIDNIGHT_INDEXER || 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
-
-function getJson(url) {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, { timeout: 10000 }, (res) => {
-        let body = '';
-        res.on('data', (chunk) => (body += chunk));
-        res.on('end', () => {
-          if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode} from ${url}`));
-          try {
-            resolve(JSON.parse(body));
-          } catch (error) {
-            reject(error);
-          }
-        });
-      })
-      .on('error', reject)
-      .on('timeout', function onTimeout() {
-        this.destroy(new Error(`Timeout requesting ${url}`));
-      });
-  });
-}
-
-async function search(query) {
-  const json = await getJson(`${INDEXER}/search/graphql?q=${encodeURIComponent(query)}`);
-  return Array.isArray(json.data?.matches) ? json.data.matches : [];
-}
+const GRAPHQL_URL = process.env.MIDNIGHT_INDEXER_GRAPHQL;
+const PROJECT_ID = process.env.MIDNIGHT_INDEXER_PROJECT_ID;
 
 async function main() {
   console.log('====================================================================');
   console.log('🔍 HORIZON: DEPLOYMENT VERIFICATION AGAINST LIVE INDEXER');
-  console.log(`Indexer: ${INDEXER}`);
+  console.log(`Source:   ${GRAPHQL_URL && PROJECT_ID ? 'authenticated indexer GraphQL' : 'public explorer REST'}`);
+  console.log(`Indexer:  ${INDEXER}`);
   console.log('====================================================================\n');
 
   if (!fs.existsSync(RECORD_PATH)) {
@@ -50,7 +26,6 @@ async function main() {
   }
 
   const record = JSON.parse(fs.readFileSync(RECORD_PATH, 'utf8'));
-
   const declaredNotDeployed = record.status === 'not-deployed' || record.deploymentStatus === 'not-deployed';
   if (declaredNotDeployed || !record.contractAddress || !record.deployTxHash) {
     const reason = declaredNotDeployed ? 'not deployed' : 'incomplete record';
@@ -58,11 +33,13 @@ async function main() {
     const report = {
       checkedAt: new Date().toISOString(),
       indexer: INDEXER,
+      source: 'not-checked',
       status: 'not-deployed',
       claimedContractAddress: record.contractAddress || null,
       claimedDeployTxHash: record.deployTxHash || null,
       contractFoundOnChain: false,
       transactionFoundOnChain: false,
+      contractDeployedByTransaction: false,
       chainTip: null,
       note: 'Record explicitly declares that no verified deployment exists. This is the expected state until a real broadcast is confirmed.',
     };
@@ -71,39 +48,43 @@ async function main() {
     return;
   }
 
-  const blocks = await getJson(`${INDEXER}/blocks/latest?limit=1`);
-  const chainTip = blocks.data?.[0]?.height ?? null;
-  const addressMatches = await search(record.contractAddress);
-  const txMatches = await search(record.deployTxHash);
-
-  const contractFoundOnChain = addressMatches.length > 0;
-  const transactionFoundOnChain = txMatches.length > 0;
-  const claimIsTrue = contractFoundOnChain && transactionFoundOnChain;
+  const result = await verifyDeploymentClaim({
+    indexer: INDEXER,
+    contractAddress: record.contractAddress,
+    deployTxHash: record.deployTxHash,
+    graphqlUrl: GRAPHQL_URL,
+    projectId: PROJECT_ID,
+  });
+  const claimIsTrue =
+    result.contractFoundOnChain &&
+    result.transactionFoundOnChain &&
+    result.contractDeployedByTransaction;
 
   const report = {
     checkedAt: new Date().toISOString(),
-    indexer: INDEXER,
+    indexer: GRAPHQL_URL && PROJECT_ID ? GRAPHQL_URL : INDEXER,
+    source: result.source,
     status: claimIsTrue ? 'verified' : 'claim-failed',
     claimedContractAddress: record.contractAddress,
     claimedDeployTxHash: record.deployTxHash,
     claimedBlockHeight: record.blockHeight ?? null,
-    chainTip,
-    claimedHeightExceedsChainTip:
-      typeof record.blockHeight === 'number' && typeof chainTip === 'number' && record.blockHeight > chainTip,
-    contractFoundOnChain,
-    transactionFoundOnChain,
+    observedBlockHeight: result.blockHeight,
+    contractFoundOnChain: result.contractFoundOnChain,
+    transactionFoundOnChain: result.transactionFoundOnChain,
+    contractDeployedByTransaction: result.contractDeployedByTransaction,
     note: claimIsTrue
-      ? 'Both the contract address and deployment transaction were found on the live indexer.'
-      : 'The claimed contract address and/or transaction could not be found on the live indexer. Do not advertise this deployment as verified.',
+      ? 'The contract, deployment transaction, and their on-chain relationship were confirmed by the indexer.'
+      : 'The deployment claim was not fully confirmed. Do not advertise it as verified.',
   };
 
   fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2) + '\n');
 
-  console.log(`Chain tip:                 ${chainTip ?? 'unknown'}`);
-  console.log(`Claimed block height:      ${record.blockHeight ?? 'n/a'}`);
-  console.log(`Contract found on chain:   ${contractFoundOnChain ? 'YES' : 'NO'}`);
-  console.log(`Deploy tx found on chain:  ${transactionFoundOnChain ? 'YES' : 'NO'}`);
-  console.log(`Report written to:         ${path.relative(ROOT_DIR, REPORT_PATH)}\n`);
+  console.log(`Source:                     ${result.source}`);
+  console.log(`Observed block height:      ${result.blockHeight ?? 'unknown'}`);
+  console.log(`Contract found on chain:    ${result.contractFoundOnChain ? 'YES' : 'NO'}`);
+  console.log(`Deploy tx found on chain:   ${result.transactionFoundOnChain ? 'YES' : 'NO'}`);
+  console.log(`Tx deployed this contract:  ${result.contractDeployedByTransaction ? 'YES' : 'NO'}`);
+  console.log(`Report written to:          ${path.relative(ROOT_DIR, REPORT_PATH)}\n`);
 
   if (!claimIsTrue) {
     console.error('❌ DEPLOYMENT CLAIM FAILED VERIFICATION.');
@@ -113,6 +94,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('❌ Verification error:', error.message);
+  console.error('❌ Verification error:', error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

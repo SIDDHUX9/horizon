@@ -21,6 +21,9 @@
     "checkedAt": "2026-11-26T12:16:14.463Z",
     "indexer": "https://preview-service-v2-01.midnightexplorer.com/api/v1",
     "status": "claim-failed",
+    "contractFoundOnChain": false,
+    "transactionFoundOnChain": false,
+    "contractDeployedByTransaction": false,
     "note": "Previously advertised address and transaction were not found on the live indexer and have been removed."
   }
 }

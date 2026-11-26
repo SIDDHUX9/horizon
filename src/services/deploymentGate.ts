@@ -12,6 +12,7 @@ export interface DeploymentRecord {
     verifiedOnChain: boolean;
     contractFoundOnChain: boolean;
     transactionFoundOnChain: boolean;
+    contractDeployedByTransaction: boolean;
     checkedAt?: string;
     indexer?: string;
   };
@@ -41,10 +42,11 @@ export function assertVerifiedDeployment(networkId: string): string {
   if (
     record.verification?.verifiedOnChain !== true ||
     record.verification.contractFoundOnChain !== true ||
-    record.verification.transactionFoundOnChain !== true
+    record.verification.transactionFoundOnChain !== true ||
+    record.verification.contractDeployedByTransaction !== true
   ) {
     throw new DeploymentNotVerifiedError(
-      'independent indexer verification of both the contract and deploy transaction is missing'
+      'independent indexer verification of the contract, deploy transaction, and their relationship is missing'
     );
   }
   if (!record.contractAddress || !/^[0-9a-fA-F]{64}$/.test(record.contractAddress)) {
