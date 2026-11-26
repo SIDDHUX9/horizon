@@ -11,6 +11,37 @@ const keysDir = path.resolve(rootDir, 'src/contracts/compiled/keys');
 const deployedConfigPath = path.resolve(rootDir, 'src/contracts/deployed-contract.json');
 const PROOF_SERVER_URL = process.env.MIDNIGHT_PROOF_SERVER || 'http://127.0.0.1:6300';
 const NETWORK_ID = process.env.MIDNIGHT_NETWORK || 'preview';
+const INDEXER_URL = process.env.MIDNIGHT_INDEXER || 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
+
+async function indexerMatches(query) {
+  try {
+    const res = await fetch(`${INDEXER_URL}/search/graphql?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return Array.isArray(json.data?.matches) ? json.data.matches : null;
+  } catch {
+    return null;
+  }
+}
+
+async function verifyDeploymentOnChain(contractAddress, deployTxHash) {
+  const [addressMatches, txMatches] = await Promise.all([
+    indexerMatches(contractAddress),
+    indexerMatches(deployTxHash),
+  ]);
+
+  const verifiedOnChain =
+    Array.isArray(addressMatches) && addressMatches.length > 0 &&
+    Array.isArray(txMatches) && txMatches.length > 0;
+
+  return {
+    verifiedOnChain,
+    contractFoundOnChain: Array.isArray(addressMatches) && addressMatches.length > 0,
+    transactionFoundOnChain: Array.isArray(txMatches) && txMatches.length > 0,
+    checkedAt: new Date().toISOString(),
+    indexer: INDEXER_URL,
+  };
+}
 
 export function midnightDeployPlugin() {
   return {
@@ -106,14 +137,21 @@ export function midnightDeployPlugin() {
         if (req.url === '/api/midnight/record-deployment' && req.method === 'POST') {
           let body = '';
           req.on('data', chunk => body += chunk);
-          req.on('end', () => {
+          req.on('end', async () => {
             try {
               const data = JSON.parse(body);
+              if (!data.contractAddress || !data.deployTxHash) {
+                throw new Error('contractAddress and deployTxHash are required');
+              }
+
+              const verification = await verifyDeploymentOnChain(data.contractAddress, data.deployTxHash);
               const record = {
                 network: NETWORK_ID,
+                deploymentStatus: verification.verifiedOnChain ? 'confirmed' : 'pending-verification',
+                verifiedOnChain: verification.verifiedOnChain,
                 contractAddress: data.contractAddress,
                 deployTxHash: data.deployTxHash,
-                deployerAddress: data.deployerAddress,
+                deployerAddress: data.deployerAddress || null,
                 blockHeight: data.blockHeight || null,
                 blockHash: data.blockHash || null,
                 timestamp: new Date().toISOString(),
@@ -124,16 +162,20 @@ export function midnightDeployPlugin() {
                   'repayLoan',
                   'liquidate'
                 ],
-                verifiedOnChain: true,
+                verification,
                 explorerUrl: `https://preview.midnightexplorer.com/transactions/${data.deployTxHash}`,
                 contractExplorerUrl: `https://preview.midnightexplorer.com/contracts/${data.contractAddress}`
               };
 
-              fs.writeFileSync(deployedConfigPath, JSON.stringify(record, null, 2));
-              console.log('✅ Real on-chain deployment recorded to:', deployedConfigPath);
+              if (verification.verifiedOnChain) {
+                fs.writeFileSync(deployedConfigPath, JSON.stringify(record, null, 2));
+                console.log('✅ Verified on-chain deployment recorded to:', deployedConfigPath);
+              } else {
+                console.warn('⚠️  Broadcast not confirmed on the indexer; canonical record was not overwritten.');
+              }
 
               res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ success: true, record }));
+              res.end(JSON.stringify({ success: true, record, verifiedOnChain: verification.verifiedOnChain }));
             } catch (err) {
               res.statusCode = 500;
               res.setHeader('Content-Type', 'application/json');

@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 const COMPILED_DIR = path.resolve(ROOT_DIR, 'src/contracts/compiled');
 const ENV_PATH = path.resolve(ROOT_DIR, '.env');
-const DEPLOYED_CONFIG_PATH = path.resolve(ROOT_DIR, 'src/contracts/deployed-contract.json');
+const PREPARED_CONFIG_PATH = path.resolve(ROOT_DIR, 'src/contracts/deployment-prepared.json');
 
 // Auto-load .env
 if (fs.existsSync(ENV_PATH)) {
@@ -38,12 +38,12 @@ if (fs.existsSync(ENV_PATH)) {
 
 const NETWORK_ID = process.env.MIDNIGHT_NETWORK || 'preview';
 const PROOF_SERVER_URL = process.env.MIDNIGHT_PROOF_SERVER || 'http://127.0.0.1:6300';
-const INDEXER_URL = 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
+const INDEXER_URL = process.env.MIDNIGHT_INDEXER || 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
 const COIN_KEY = process.env.MIDNIGHT_COIN_KEY;
 const ENCRYPTION_KEY = process.env.MIDNIGHT_ENCRYPTION_KEY;
 
 console.log('====================================================================');
-console.log('🌌 HORIZON PROTOCOL: MIDNIGHT PREVIEW ON-CHAIN DEPLOYMENT ENGINE');
+console.log('🌌 HORIZON PROTOCOL: MIDNIGHT PREVIEW DEPLOY PREPARATION');
 console.log(`🌐 Midnight Network:   ${NETWORK_ID}`);
 console.log(`📡 Proof Server (ZK):  ${PROOF_SERVER_URL}`);
 console.log(`🔗 Live Indexer:       ${INDEXER_URL}`);
@@ -201,43 +201,36 @@ async function main() {
 
   const matches = cliAddressStr ? await checkAddressOnChain(cliAddressStr) : [];
   
-  if (matches.length === 0) {
-    console.log('\n====================================================================');
-    console.log('⚡ ACTION REQUIRED: BROADCASTING VIA YOUR FUNDED MIDNIGHT LACE WALLET');
-    console.log('====================================================================');
-    console.log('Your funded wallet (25,734 tDUST and 10,000 tNIGHT) is located inside');
-    console.log('your Midnight Lace browser extension (Midnight #0).');
-    console.log('');
-    console.log('👉 FASTEST & EASIEST PATH:');
-    console.log('   1. Open http://localhost:5173 in your browser.');
-    console.log('   2. Connect Midnight Lace.');
-    console.log('   3. Click "Deploy Horizon Contract to Midnight Preview Testnet".');
-    console.log('   4. Lace will sign and broadcast on-chain in ~15 seconds!');
-    console.log('');
-    console.log('👉 ALTERNATIVE CLI PATH:');
-    console.log(`   Send 50 tDUST from Lace to: ${cliAddressStr}`);
-    console.log('   Then re-run this script to broadcast via CLI node client.');
-    console.log('====================================================================\n');
-  }
+  console.log('\n====================================================================');
+  console.log('DEPLOYMENT IS PREPARED, NOT BROADCAST');
+  console.log('====================================================================');
+  console.log('This script generates a locally proven deploy transaction. It does not');
+  console.log('submit it to Midnight Preview and does not prove on-chain inclusion.');
+  console.log('Use a funded Midnight wallet to sign and broadcast the prepared payload.');
+  console.log(`On-chain matches for the derived address: ${matches.length}`);
+  if (cliAddressStr) console.log(`CLI address checked: ${cliAddressStr}`);
+  console.log('====================================================================\n');
 
-  // Record pending/prepared deployment
-  const deploymentData = {
+  // This is a local preparation artifact, not a verified deployment record.
+  const preparedData = {
     network: NETWORK_ID,
+    deploymentStatus: 'prepared-not-broadcast',
+    verifiedOnChain: false,
     contractAddress,
-    deployerAddress: cliAddressStr || 'Midnight Lace Protocol Account',
-    deployTxHash: realProofHash,
-    blockHeight: latestBlock.height,
-    blockHash: latestBlock.hash,
+    deployerAddress: cliAddressStr || null,
+    preparedProofHash: realProofHash,
+    deployTxHash: null,
+    observedBlockHeight: latestBlock.height,
+    observedBlockHash: latestBlock.hash,
     timestamp: new Date().toISOString(),
     circuits,
-    verifiedOnChain: true,
-    explorerUrl: `https://preview.midnightexplorer.com/transactions/${realProofHash}`,
-    contractExplorerUrl: `https://preview.midnightexplorer.com/contracts/${contractAddress}`,
-    unsealedTxHex
+    unsealedTxHex,
+    note: 'Locally proven deploy payload. Broadcast and indexer verification are required before this becomes a deployment record.'
   };
 
-  fs.writeFileSync(DEPLOYED_CONFIG_PATH, JSON.stringify(deploymentData, null, 2));
-  console.log(`✅ Deployment metadata prepared and saved to: ${DEPLOYED_CONFIG_PATH}\n`);
+  fs.writeFileSync(PREPARED_CONFIG_PATH, JSON.stringify(preparedData, null, 2));
+  console.log(`✅ Prepared payload saved to: ${PREPARED_CONFIG_PATH}`);
+  console.log('   The canonical deployment record was left unchanged.\n');
 }
 
 main().catch(err => {

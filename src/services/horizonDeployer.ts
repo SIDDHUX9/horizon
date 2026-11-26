@@ -1,6 +1,7 @@
 import { LaceConnectedSession } from './laceWallet';
 import { horizon } from '../contracts/horizonSimulator';
 import deployedContractData from '../contracts/deployed-contract.json';
+import { MidnightLiveIndexer } from './midnightLiveIndexer';
 
 export interface PreparedDeployData {
   success: boolean;
@@ -12,21 +13,33 @@ export interface PreparedDeployData {
   networkId: string;
 }
 
-export interface DeploymentRecord {
-  network: string;
-  contractAddress: string;
-  deployTxHash: string;
-  deployerAddress: string;
-  blockHeight: number | null;
-  blockHash: string | null;
-  timestamp: string;
-  circuits: string[];
-  verifiedOnChain: boolean;
-  explorerUrl: string;
-  contractExplorerUrl: string;
+export interface DeploymentVerification {
+  verifiedOnChain?: boolean;
+  contractFoundOnChain?: boolean;
+  transactionFoundOnChain?: boolean;
+  checkedAt: string;
+  indexer: string;
+  status?: string;
+  note?: string;
 }
 
-export type DeployStep = 
+export interface DeploymentRecord {
+  network: string;
+  deploymentStatus?: 'not-deployed' | 'prepared-not-broadcast' | 'pending-verification' | 'confirmed';
+  verifiedOnChain: boolean;
+  contractAddress: string | null;
+  deployTxHash: string | null;
+  deployerAddress: string | null;
+  blockHeight: number | null;
+  blockHash: string | null;
+  timestamp: string | null;
+  circuits: string[];
+  explorerUrl: string | null;
+  contractExplorerUrl: string | null;
+  verification?: DeploymentVerification;
+}
+
+export type DeployStep =
   | 'idle'
   | 'preparing_proof'
   | 'awaiting_lace'
@@ -34,6 +47,8 @@ export type DeployStep =
   | 'confirming_block'
   | 'finalized'
   | 'failed';
+
+const INDEXER_BASE = 'https://preview-service-v2-01.midnightexplorer.com/api/v1';
 
 export class HorizonDeployer {
   static async checkStatus(): Promise<{
@@ -52,7 +67,9 @@ export class HorizonDeployer {
           deployedContract: json.deployedContract || fallbackRecord,
         };
       }
-    } catch {}
+    } catch {
+      // The endpoint is only present in the Vite dev server.
+    }
 
     return {
       proofServerOnline: false,
@@ -69,7 +86,10 @@ export class HorizonDeployer {
     });
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}));
-      throw new Error(errJson.error || `Deployment proof generation requires a local Midnight Docker proof server (Port 6300). Current live contract is already verified on-chain at 0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee.`);
+      throw new Error(
+        errJson.error ||
+        'Deployment proof preparation requires the Vite dev API and a local proof server on port 6300. Static production builds do not expose this endpoint.'
+      );
     }
     return await res.json();
   }
@@ -78,8 +98,8 @@ export class HorizonDeployer {
     contractAddress: string;
     deployTxHash: string;
     deployerAddress: string;
-    blockHeight?: number;
-    blockHash?: string;
+    blockHeight?: number | null;
+    blockHash?: string | null;
   }): Promise<DeploymentRecord> {
     const res = await fetch('/api/midnight/record-deployment', {
       method: 'POST',
@@ -93,6 +113,18 @@ export class HorizonDeployer {
     return json.record;
   }
 
+  private static async waitForIndexer(query: string, attempts = 5): Promise<boolean> {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const result = await MidnightLiveIndexer.searchOnChain(query);
+      const matches = result?.matches;
+      if (Array.isArray(matches) && matches.length > 0) return true;
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+      }
+    }
+    return false;
+  }
+
   static async executeOnChainDeployment(
     session: LaceConnectedSession,
     onStepChange?: (step: DeployStep, message: string) => void
@@ -101,71 +133,68 @@ export class HorizonDeployer {
       throw new Error('No active Midnight Lace wallet session. Please connect your wallet first.');
     }
 
-    // Step 1: Proving
-    onStepChange?.('preparing_proof', 'Generating Zero-Knowledge deployment proof on local Docker proof server (Port 6300)...');
+    onStepChange?.('preparing_proof', 'Generating a locally proven deploy transaction on the configured proof server...');
     const prepared = await this.prepareDeployTransaction();
 
-    // Step 2: Lace Balancing
-    onStepChange?.('awaiting_lace', 'Awaiting authorization in Midnight Lace wallet to sign and balance transaction gas with tDUST...');
+    onStepChange?.('awaiting_lace', 'Awaiting wallet authorization to sign and balance transaction fees...');
     let balancedTxHex = '';
     try {
       if (typeof session.api.balanceUnsealedTransaction !== 'function') {
-        throw new Error('Connected wallet does not support balanceUnsealedTransaction method.');
+        throw new Error('Connected wallet does not support balanceUnsealedTransaction.');
       }
       const balanceRes = await session.api.balanceUnsealedTransaction(prepared.unsealedTxHex, { payFees: true });
       balancedTxHex = typeof balanceRes === 'string' ? balanceRes : (balanceRes?.tx || '');
-      if (!balancedTxHex) {
-        throw new Error('Wallet did not return a balanced transaction.');
-      }
+      if (!balancedTxHex) throw new Error('Wallet did not return a balanced transaction.');
     } catch (err: any) {
-      onStepChange?.('failed', err?.message || 'Transaction rejected in Midnight Lace wallet.');
-      throw new Error(`Lace balancing declined or failed: ${err?.message || 'Unknown error'}`);
+      onStepChange?.('failed', err?.message || 'Transaction rejected in wallet.');
+      throw new Error(`Wallet balancing failed: ${err?.message || 'Unknown error'}`);
     }
 
-    // Step 3: Broadcast
-    onStepChange?.('submitting', 'Submitting balanced deployment transaction to Midnight Preview network node...');
+    onStepChange?.('submitting', 'Submitting the balanced deployment transaction...');
     let broadcastTxHash = prepared.zkProofHash;
     try {
       if (typeof session.api.submitTransaction !== 'function') {
-        throw new Error('Connected wallet does not support submitTransaction method.');
+        throw new Error('Connected wallet does not support submitTransaction.');
       }
       const submitRes = await session.api.submitTransaction(balancedTxHex);
-      if (typeof submitRes === 'string' && submitRes) {
-        broadcastTxHash = submitRes;
-      }
+      if (typeof submitRes === 'string' && submitRes) broadcastTxHash = submitRes;
     } catch (err: any) {
-      onStepChange?.('failed', err?.message || 'Submission to Midnight network failed.');
+      onStepChange?.('failed', err?.message || 'Submission failed.');
       throw new Error(`Transaction broadcast failed: ${err?.message || 'Unknown error'}`);
     }
 
-    // Step 4: Block Inclusion
-    onStepChange?.('confirming_block', 'Transaction submitted! Awaiting block inclusion and indexing on Midnight Preview Explorer...');
-    
-    // We poll latest blocks to get height
-    let latestHeight = 815300;
-    try {
-      const blockRes = await fetch('https://preview-service-v2-01.midnightexplorer.com/api/v1/blocks/latest?limit=1');
-      if (blockRes.ok) {
-        const json = await blockRes.json();
-        latestHeight = json.data?.[0]?.height || 815300;
-      }
-    } catch {}
+    onStepChange?.('confirming_block', 'Checking the live indexer for transaction inclusion...');
+    const transactionFoundOnChain = await this.waitForIndexer(broadcastTxHash);
+    const contractFoundOnChain = await this.waitForIndexer(prepared.rawContractAddress || prepared.contractAddress);
 
-    const blockHeight = latestHeight + 1;
+    if (!transactionFoundOnChain || !contractFoundOnChain) {
+      onStepChange?.(
+        'failed',
+        'Transaction was submitted but could not be confirmed on the indexer. No verified deployment record was written.'
+      );
+      throw new Error('Deployment could not be verified on-chain. The canonical deployment record was left unchanged.');
+    }
 
-    // Step 5: Finalize Record
-    onStepChange?.('finalized', `Deployment confirmed! Contract created at ${prepared.contractAddress}`);
+    const verification: DeploymentVerification = {
+      verifiedOnChain: true,
+      contractFoundOnChain,
+      transactionFoundOnChain,
+      checkedAt: new Date().toISOString(),
+      indexer: INDEXER_BASE,
+    };
+
+    onStepChange?.('finalized', `Deployment verified on the indexer at ${prepared.contractAddress}`);
     const record = await this.recordDeployment({
       contractAddress: prepared.contractAddress,
       deployTxHash: broadcastTxHash,
       deployerAddress: session.unshieldedAddress,
-      blockHeight,
+      blockHeight: null,
+      blockHash: null,
     });
 
-    // Add to live transactions log
     horizon.recordOnChainTransaction({
       tx_hash: broadcastTxHash,
-      block_height: blockHeight,
+      block_height: record.blockHeight ?? 0,
       circuit: 'Contract Deployment',
       caller: session.unshieldedAddress,
       timestamp: Date.now(),
@@ -173,17 +202,16 @@ export class HorizonDeployer {
       explorer_url: `https://preview.midnightexplorer.com/contracts/${prepared.contractAddress}`,
       public_data: {
         contract_address: prepared.contractAddress,
-        circuits_deployed: '5 verified circuits',
+        circuits_deployed: '5 circuits',
         network: 'Midnight Preview Testnet',
-        gas_settled_by: 'Midnight Lace Wallet',
+        indexer_verified: verification.checkedAt,
       },
       hidden_private_data: {
-        witness_status: 'Contract bytecodes and 5 ZKIR verifier operations registered on ledger.',
+        witness_status: 'Not applicable to contract deployment.',
       },
       proof_verified: true,
     });
 
-    return record;
+    return { ...record, verification };
   }
 }
-

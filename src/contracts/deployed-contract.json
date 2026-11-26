@@ -1,11 +1,13 @@
 {
   "network": "preview",
-  "contractAddress": "0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee",
-  "deployerAddress": "Midnight Lace Protocol Account",
-  "deployTxHash": "0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26",
-  "blockHeight": 815539,
-  "blockHash": "0x1de767751b05327342f30937a0c5612a00e4ab0c4155abf516898cef45f40533",
-  "timestamp": "2026-09-11T07:14:30.000Z",
+  "deploymentStatus": "not-deployed",
+  "verifiedOnChain": false,
+  "contractAddress": null,
+  "deployerAddress": null,
+  "deployTxHash": null,
+  "blockHeight": null,
+  "blockHash": null,
+  "timestamp": null,
   "circuits": [
     "createLendingPool",
     "submitFinancialSnapshot",
@@ -13,7 +15,12 @@
     "repayLoan",
     "liquidate"
   ],
-  "verifiedOnChain": true,
-  "explorerUrl": "https://preview.midnightexplorer.com/transactions/0x4b11e7924f3a8063da27c49093c432a8c7a3ed26cb29ea8bce009b4ec54cee26",
-  "contractExplorerUrl": "https://preview.midnightexplorer.com/contracts/0x9f32540f9f75d91dd1353deae6419b6c531ebff2428bb3567edcfccb580541ee"
+  "explorerUrl": null,
+  "contractExplorerUrl": null,
+  "verification": {
+    "checkedAt": "2026-11-26T12:16:14.463Z",
+    "indexer": "https://preview-service-v2-01.midnightexplorer.com/api/v1",
+    "status": "claim-failed",
+    "note": "Previously advertised address and transaction were not found on the live indexer and have been removed."
+  }
 }

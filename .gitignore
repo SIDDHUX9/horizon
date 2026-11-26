@@ -19,8 +19,9 @@ dist
 !.env.example
 wave2.md
 
-# Generated deployment verification output (refreshed by npm run verify:deployment)
+# Generated deployment output (refreshed by deployment/verification scripts)
 src/contracts/deployment-verification.json
+src/contracts/deployment-prepared.json
 
 # Cryptographic private keys and seeds
 *.key

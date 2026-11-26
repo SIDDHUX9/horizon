@@ -51,8 +51,9 @@ async function main() {
 
   const record = JSON.parse(fs.readFileSync(RECORD_PATH, 'utf8'));
 
-  if (record.status === 'not-deployed' || !record.contractAddress || !record.deployTxHash) {
-    const reason = record.status === 'not-deployed' ? 'not deployed' : 'incomplete record';
+  const declaredNotDeployed = record.status === 'not-deployed' || record.deploymentStatus === 'not-deployed';
+  if (declaredNotDeployed || !record.contractAddress || !record.deployTxHash) {
+    const reason = declaredNotDeployed ? 'not deployed' : 'incomplete record';
     console.log(`ℹ️  Deployment record is ${reason}. Nothing to verify on-chain.\n`);
     const report = {
       checkedAt: new Date().toISOString(),
