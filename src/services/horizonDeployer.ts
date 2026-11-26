@@ -2,6 +2,7 @@ import { LaceConnectedSession } from './laceWallet';
 import { horizon } from '../contracts/horizonSimulator';
 import deployedContractData from '../contracts/deployed-contract.json';
 import { MidnightLiveIndexer } from './midnightLiveIndexer';
+import { explorerContractUrl } from './explorerUrls';
 
 export interface PreparedDeployData {
   success: boolean;
@@ -199,7 +200,7 @@ export class HorizonDeployer {
       caller: session.unshieldedAddress,
       timestamp: Date.now(),
       onchain_confirmed: true,
-      explorer_url: `https://preview.midnightexplorer.com/contracts/${prepared.contractAddress}`,
+      explorer_url: explorerContractUrl(prepared.contractAddress),
       public_data: {
         contract_address: prepared.contractAddress,
         circuits_deployed: '5 circuits',

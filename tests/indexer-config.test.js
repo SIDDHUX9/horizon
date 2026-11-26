@@ -18,3 +18,17 @@ test('browser indexer endpoint is configurable per network', () => {
 test('example environment documents the public indexer override', () => {
   assert.match(read('.env.example'), /^VITE_INDEXER_URL=/m);
 });
+
+test('explorer links are centralized and network configurable', () => {
+  const helper = read('src/services/explorerUrls.ts');
+  assert.match(helper, /import\.meta\.env\.VITE_EXPLORER_URL/);
+  for (const file of [
+    'src/components/BorrowerStudio.tsx',
+    'src/components/WhitepaperPage.tsx',
+    'src/components/TransparencyExplorer.tsx',
+    'src/services/horizonDeployer.ts',
+  ]) {
+    assert.equal(read(file).includes('https://preview.midnightexplorer.com'), false);
+  }
+  assert.match(read('.env.example'), /^VITE_EXPLORER_URL=/m);
+});

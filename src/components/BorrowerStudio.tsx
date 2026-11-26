@@ -26,6 +26,7 @@ import {
   computeSnapshotCommitment, 
   generateRandomHex 
 } from '../contracts/horizonSimulator';
+import { explorerTransactionUrl } from '../services/explorerUrls';
 
 interface BorrowerStudioProps {
   pools: LendingPool[];
@@ -721,7 +722,7 @@ export const BorrowerStudio: React.FC<BorrowerStudioProps> = ({
               </div>
               {lastProofTrace.onchain_confirmed ? (
                 <a
-                  href={`https://preview.midnightexplorer.com/transactions/${lastProofTrace.tx_hash}`}
+                  href={explorerTransactionUrl(lastProofTrace.tx_hash)}
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs text-emerald-800 hover:underline flex items-center gap-1 font-sans shrink-0 font-semibold"

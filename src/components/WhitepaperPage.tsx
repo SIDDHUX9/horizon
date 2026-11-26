@@ -20,6 +20,11 @@ import {
 } from 'lucide-react';
 import { ProtocolRoute } from '../services/router';
 import deployedContractData from '../contracts/deployed-contract.json';
+import {
+  explorerBlockUrl,
+  explorerContractUrl,
+  explorerTransactionUrl,
+} from '../services/explorerUrls';
 
 interface WhitepaperPageProps {
   onNavigate: (route: ProtocolRoute) => void;
@@ -169,7 +174,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
             </div>
             {blockHeight ? (
               <a
-                href={`https://preview.midnightexplorer.com/blocks/${blockHeight}`}
+                href={explorerBlockUrl(blockHeight)}
                 target="_blank"
                 rel="noreferrer"
                 className="px-3 py-1.5 rounded-lg bg-white border border-[#eaeae5] shadow-sm flex items-center gap-1.5 text-[#2d343b] hover:border-[#11161a] transition-colors"
@@ -187,7 +192,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
               <span>{deploymentVerified ? 'Contract: verified' : 'Deployment: not verified'}</span>
               {deploymentVerified && contractAddress && (
                 <a
-                  href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
+                  href={explorerContractUrl(contractAddress)}
                   target="_blank"
                   rel="noreferrer"
                   className="hover:underline"
@@ -519,7 +524,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
                 <span className="text-[#707e8c]">Contract address:</span>
                 {contractAddress ? (
                   <a
-                    href={`https://preview.midnightexplorer.com/contracts/${contractAddress}`}
+                    href={explorerContractUrl(contractAddress)}
                     target="_blank"
                     rel="noreferrer"
                     className="text-cyan-700 hover:underline break-all"
@@ -534,7 +539,7 @@ Full whitepaper available in the repository root at WHITEPAPER.md.`;
                 <span className="text-[#707e8c]">Deployment transaction:</span>
                 {deployTxHash ? (
                   <a
-                    href={`https://preview.midnightexplorer.com/transactions/${deployTxHash}`}
+                    href={explorerTransactionUrl(deployTxHash)}
                     target="_blank"
                     rel="noreferrer"
                     className="text-emerald-700 hover:underline break-all"

@@ -30,6 +30,11 @@ import { formatNight, formatBps } from '../contracts/horizonSimulator';
 import { LaceConnectedSession } from '../services/laceWallet';
 import { HorizonDeployer, DeploymentRecord, DeployStep } from '../services/horizonDeployer';
 import { RuntimeMode } from '../services/runtimeMode';
+import {
+  explorerBlockUrl,
+  explorerContractUrl,
+  explorerTransactionUrl,
+} from '../services/explorerUrls';
 
 interface TransparencyExplorerProps {
   transactions: ExplorerTransaction[];
@@ -215,7 +220,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
           <div className="flex items-center gap-2.5 shrink-0">
             {deployedContract?.contractAddress && (
               <a
-                href={`https://preview.midnightexplorer.com/contracts/${deployedContract.contractAddress}`}
+                href={explorerContractUrl(deployedContract.contractAddress || '')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-[#11161a] hover:opacity-75 font-sans font-semibold transition underline shrink-0 py-1.5"
@@ -392,7 +397,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                   </div>
                   <div className="flex items-center gap-3 pt-1">
                     <a
-                      href={`https://preview.midnightexplorer.com/contracts/${deployedContract.contractAddress}`}
+                      href={explorerContractUrl(deployedContract.contractAddress || '')}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-sans text-xs font-bold inline-flex items-center gap-1.5 transition shadow-sm"
@@ -718,7 +723,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                   <div className="flex items-center gap-2.5">
                     {tx.onchain_confirmed ? (
                       <a
-                        href={`https://preview.midnightexplorer.com/blocks/${tx.block_height}`}
+                        href={explorerBlockUrl(tx.block_height)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition"
@@ -739,7 +744,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                   <div className="text-[#525f6c] text-[11px]">
                     {tx.onchain_confirmed ? (
                       <a
-                        href={tx.explorer_url || `https://preview.midnightexplorer.com/transactions/${tx.tx_hash}`}
+                        href={tx.explorer_url || explorerTransactionUrl(tx.tx_hash)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-emerald-800 hover:opacity-75 font-mono transition group"
