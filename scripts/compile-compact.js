@@ -194,6 +194,31 @@ for (const [manifestKey, expectedKey] of [
 
 // Source, bindings, manifest, and ZKIR must be reproducible. Keys are only
 // compared during --full because --skip-zk intentionally omits them.
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])]));
+  }
+  return value;
+}
+
+function sourceCheckManifest(manifest) {
+  const copy = canonicalJson(manifest);
+  delete copy.keys;
+  return copy;
+}
+
+const committedManifestPath = path.join(outputPath, 'compiler/contract-manifest.json');
+if (!fs.existsSync(committedManifestPath)) {
+  fail('❌ Committed compiler/contract-manifest.json is missing.');
+}
+const committedManifest = JSON.parse(fs.readFileSync(committedManifestPath, 'utf8'));
+const comparableGenerated = fullKeyGeneration ? canonicalJson(generatedManifest) : sourceCheckManifest(generatedManifest);
+const comparableCommitted = fullKeyGeneration ? canonicalJson(committedManifest) : sourceCheckManifest(committedManifest);
+if (JSON.stringify(comparableGenerated) !== JSON.stringify(comparableCommitted)) {
+  fail('❌ compiler/contract-manifest.json does not match committed output. Recompile with --full and review the diff.');
+}
+
 const comparedFiles = [
   'compiler/contract-manifest.json',
   'compiler/contract-info.json',

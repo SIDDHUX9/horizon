@@ -27,6 +27,12 @@ test('compile script maps manifest keys to pinned toolchain keys', () => {
   assert.match(source, /\['runtime-version', 'runtimeVersion'\]/);
 });
 
+test('source check ignores key hashes that only full compilation generates', () => {
+  assert.match(source, /function sourceCheckManifest\(manifest\)/);
+  assert.match(source, /delete copy\.keys;/);
+  assert.match(source, /fullKeyGeneration \? canonicalJson\(generatedManifest\) : sourceCheckManifest\(generatedManifest\)/);
+});
+
 test('compile script separates read-only checks from full key regeneration', () => {
   assert.match(source, /process\.argv\.includes\('--check'\)/);
   assert.match(source, /process\.argv\.includes\('--full'\)/);
