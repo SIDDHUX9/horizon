@@ -40,6 +40,8 @@ export const HORIZON_CIRCUITS = [
 
 type CircuitId = (typeof HORIZON_CIRCUITS)[number];
 
+export const HORIZON_PRIVATE_STATE_ID = 'horizon-borrower';
+
 export interface HorizonPrivateState {
   snapshot?: {
     actual_income: bigint;
@@ -48,6 +50,20 @@ export interface HorizonPrivateState {
     computed_collateral_ratio: bigint;
     salt: Uint8Array;
   };
+}
+
+/**
+ * A fresh wallet has no stored private state. `findDeployedContract()` refuses
+ * to attach when a `privateStateId` is named but nothing is stored under it,
+ * so attach must seed an empty state first. Any existing state is preserved.
+ */
+export const EMPTY_HORIZON_PRIVATE_STATE: HorizonPrivateState = {};
+
+export async function resolveInitialPrivateState(states: {
+  get(id: string): Promise<HorizonPrivateState | undefined | null>;
+}): Promise<HorizonPrivateState> {
+  const existing = await states.get(HORIZON_PRIVATE_STATE_ID);
+  return existing ?? EMPTY_HORIZON_PRIVATE_STATE;
 }
 
 export interface HorizonClientConfig {
@@ -211,11 +227,16 @@ export class MidnightProtocolClient {
 
   private async attach() {
     // findDeployedContract byte-matches local verifier keys against the chain's
-    // registered keys, so a wrong artifact set is caught before any call.
+    // registered keys, so a wrong artifact set is caught before any call. It
+    // also requires stored private state whenever an ID is named, so seed an
+    // empty state for wallets that have never used Horizon before.
+    const states = this.providers.privateStateProvider.forContract(this.contractAddress);
+    const initialPrivateState = await resolveInitialPrivateState(states);
     this.contractHandle = (await findDeployedContract(this.providers as never, {
       compiledContract: this.compiledContract,
       contractAddress: this.contractAddress,
-      privateStateId: 'horizon-borrower',
+      privateStateId: HORIZON_PRIVATE_STATE_ID,
+      initialPrivateState,
     } as never)) as unknown as HorizonContractHandle;
   }
 
@@ -223,13 +244,13 @@ export class MidnightProtocolClient {
   async prepareSnapshot(snapshot: HorizonPrivateState['snapshot']): Promise<void> {
     if (!snapshot) throw new Error('snapshot is required');
     const states = this.providers.privateStateProvider.forContract(this.contractAddress);
-    await states.set('horizon-borrower', { snapshot });
+    await states.set(HORIZON_PRIVATE_STATE_ID, { snapshot });
   }
 
   /** Returns the current private snapshot without disclosing it to the UI log. */
   async readSnapshot(): Promise<HorizonPrivateState['snapshot'] | undefined> {
     const states = this.providers.privateStateProvider.forContract(this.contractAddress);
-    const state = await states.get('horizon-borrower');
+    const state = await states.get(HORIZON_PRIVATE_STATE_ID);
     return state?.snapshot;
   }
 
