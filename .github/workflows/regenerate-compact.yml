@@ -1,0 +1,48 @@
+name: Regenerate Compact artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why the pinned Compact artifacts must be regenerated'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install Compact CLI
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.3/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.compact/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Compact compiler
+        run: |
+          compact update 0.36.1
+          compact compile +0.36.1 --version
+      - name: Regenerate keys, ZKIR, and bindings
+        run: npm run compile:compact -- --full --update-client-hash
+      - name: Verify regenerated artifacts
+        run: npm run verify:artifacts
+      - name: Verify browser build serves regenerated artifacts
+        run: |
+          npm run build
+          npm run verify:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horizon-compact-regenerated
+          path: |
+            src/contracts/compiled
+            src/services/midnightProtocolClient.ts
+          if-no-files-found: error

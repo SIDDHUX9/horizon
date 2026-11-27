@@ -43,3 +43,12 @@ test('artifact verifier can check a copied build output directory', () => {
   assert.ok(buildScript.includes('verifyArtifacts(distContracts)'));
   assert.ok(buildScript.includes('EXPECTED_MANIFEST_HASH'));
 });
+
+test('reviewers can regenerate pinned artifacts in a clean Linux runner', () => {
+  const workflow = read('.github/workflows/regenerate-compact.yml');
+  assert.ok(workflow.includes('workflow_dispatch:'));
+  assert.ok(workflow.includes('compact update 0.36.1'));
+  assert.ok(workflow.includes('npm run compile:compact -- --full --update-client-hash'));
+  assert.ok(workflow.includes('npm run verify:build'));
+  assert.ok(workflow.includes('upload-artifact@v4'));
+});
