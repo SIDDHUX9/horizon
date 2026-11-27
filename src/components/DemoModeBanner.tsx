@@ -1,14 +1,15 @@
 import React from 'react';
-import { getRuntimeMode, setDemoMode } from '../services/runtimeMode';
+import { getRuntimeMode, isDemoAllowed, setDemoMode } from '../services/runtimeMode';
 
 /**
- * Honesty banner. In production mode the protocol is explicitly offline until
- * a verified deployment exists; demo mode is opt-in via ?demo=1 or the toggle.
+ * Honesty banner. Production builds cannot enter demo mode and cannot dismiss
+ * the status banner; demo mode is a development-only opt-in via ?demo=1.
  */
 export const DemoModeBanner: React.FC = () => {
   const mode = getRuntimeMode();
+  const demoAllowed = isDemoAllowed();
   const [dismissed, setDismissed] = React.useState(false);
-  if (dismissed) return null;
+  if (dismissed && demoAllowed) return null;
 
   const isDemo = mode === 'demo';
   return (
@@ -26,29 +27,33 @@ export const DemoModeBanner: React.FC = () => {
       <span className="font-medium">
         {isDemo
           ? 'Protocol state and proof progress are simulated in this browser. No on-chain transactions are submitted.'
-          : 'No verified deployment exists. Circuit calls are disabled.'}
+          : 'Production build: demo simulation is disabled. Circuit calls require a verified deployment and wallet session.'}
       </span>
-      <button
-        type="button"
-        className="ml-3 underline underline-offset-2 hover:opacity-70"
-        onClick={() => {
-          setDemoMode(!isDemo);
-          const url = new URL(window.location.href);
-          if (isDemo) url.searchParams.delete('demo');
-          else url.searchParams.set('demo', '1');
-          window.location.href = url.toString();
-        }}
-      >
-        {isDemo ? 'Exit demo' : 'Enter demo'}
-      </button>
-      <button
-        type="button"
-        aria-label="Dismiss banner"
-        className="ml-3 opacity-60 hover:opacity-100"
-        onClick={() => setDismissed(true)}
-      >
-        ×
-      </button>
+      {demoAllowed && (
+        <button
+          type="button"
+          className="ml-3 underline underline-offset-2 hover:opacity-70"
+          onClick={() => {
+            setDemoMode(!isDemo);
+            const url = new URL(window.location.href);
+            if (isDemo) url.searchParams.delete('demo');
+            else url.searchParams.set('demo', '1');
+            window.location.href = url.toString();
+          }}
+        >
+          {isDemo ? 'Exit demo' : 'Enter demo'}
+        </button>
+      )}
+      {demoAllowed && (
+        <button
+          type="button"
+          aria-label="Dismiss banner"
+          className="ml-3 opacity-60 hover:opacity-100"
+          onClick={() => setDismissed(true)}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 };

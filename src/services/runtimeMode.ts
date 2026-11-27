@@ -1,10 +1,15 @@
 /**
- * Runtime mode selection. Demo mode is ALWAYS an explicit opt-in.
- * Production builds without an explicit demo flag never touch the simulator.
+ * Runtime mode selection. Demo mode is an explicit opt-in for development only.
+ * Production builds always stay in production mode, even if a demo flag or a
+ * stale localStorage value is present.
  */
 export type RuntimeMode = 'demo' | 'production';
 
 const DEMO_STORAGE_KEY = 'horizon:demo-mode';
+
+export function isDemoAllowed(): boolean {
+  return import.meta.env.DEV;
+}
 
 function hasExplicitDemoFlag(): boolean {
   if (typeof window === 'undefined') return false;
@@ -18,12 +23,13 @@ function hasExplicitDemoFlag(): boolean {
 }
 
 export function getRuntimeMode(): RuntimeMode {
+  if (!isDemoAllowed()) return 'production';
   if (import.meta.env.VITE_DEMO_MODE === 'true') return 'demo';
   return hasExplicitDemoFlag() ? 'demo' : 'production';
 }
 
 export function setDemoMode(enabled: boolean): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !isDemoAllowed()) return;
   try {
     if (enabled) window.localStorage.setItem(DEMO_STORAGE_KEY, 'true');
     else window.localStorage.removeItem(DEMO_STORAGE_KEY);
@@ -34,10 +40,10 @@ export function setDemoMode(enabled: boolean): void {
 
 export class ProductionModeError extends Error {
   constructor(action: string) {
-    super(
-      `${action} is disabled: the protocol is not deployed and verified. ` +
-        'Add ?demo=1 to the URL to use the explicitly labelled local demonstration.'
-    );
+    const demoHint = isDemoAllowed()
+      ? ' Add ?demo=1 to the URL to use the explicitly labelled local demonstration.'
+      : '';
+    super(`${action} is disabled: the protocol is not deployed and verified.${demoHint}`);
     this.name = 'ProductionModeError';
   }
 }

@@ -809,5 +809,25 @@ export class HorizonProtocol {
   }
 }
 
-// Global protocol singleton
-export const horizon = new HorizonProtocol();
+/**
+ * Lazily constructed demo singleton. Importing formatting helpers from this
+ * module must not read demo localStorage in production builds; the simulator
+ * is only instantiated when a demo handler actually touches `horizon`.
+ */
+let simulator: HorizonProtocol | undefined;
+
+function getSimulator(): HorizonProtocol {
+  if (!simulator) simulator = new HorizonProtocol();
+  return simulator;
+}
+
+export const horizon: HorizonProtocol = new Proxy({} as HorizonProtocol, {
+  get(_target, property) {
+    const instance = getSimulator();
+    const value = Reflect.get(instance, property, instance);
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+  set(_target, property, value) {
+    return Reflect.set(getSimulator(), property, value);
+  },
+});

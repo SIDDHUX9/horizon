@@ -8,11 +8,27 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(dir, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-test('runtime mode defaults to production and demo is explicit opt-in', () => {
+test('production builds cannot enter demo mode; development demo is explicit opt-in', () => {
   const source = read('src/services/runtimeMode.ts');
+  assert.match(source, /if \(!isDemoAllowed\(\)\) return 'production';/);
+  assert.match(source, /return import\.meta\.env\.DEV;/);
   assert.match(source, /VITE_DEMO_MODE === 'true'/);
   assert.match(source, /hasExplicitDemoFlag\(\) \? 'demo' : 'production'/);
   assert.match(source, /params\.get\('demo'\)/);
+});
+
+test('production banner is non-dismissible and has no demo toggle', () => {
+  const banner = read('src/components/DemoModeBanner.tsx');
+  assert.ok(banner.includes('if (dismissed && demoAllowed) return null;'));
+  assert.equal((banner.match(/\{demoAllowed && \(/g) || []).length, 2);
+  assert.ok(banner.includes('Production build: demo simulation is disabled.'));
+});
+
+test('demo simulator is constructed only when a demo handler uses it', () => {
+  const simulator = read('src/contracts/horizonSimulator.ts');
+  assert.ok(simulator.includes('let simulator: HorizonProtocol | undefined;'));
+  assert.ok(simulator.includes('if (!simulator) simulator = new HorizonProtocol();'));
+  assert.ok(!simulator.includes('export const horizon = new HorizonProtocol();'));
 });
 
 test('production circuit handlers cannot silently use the simulator', () => {
