@@ -21,6 +21,12 @@ test('compile script uses the versioned Compact CLI when available', () => {
   assert.match(source, /COMPACTC_BIN/);
 });
 
+test('compile script maps manifest keys to pinned toolchain keys', () => {
+  assert.match(source, /\['compiler-version', 'compilerVersion'\]/);
+  assert.match(source, /\['language-version', 'languageVersion'\]/);
+  assert.match(source, /\['runtime-version', 'runtimeVersion'\]/);
+});
+
 test('compile script separates read-only checks from full key regeneration', () => {
   assert.match(source, /process\.argv\.includes\('--check'\)/);
   assert.match(source, /process\.argv\.includes\('--full'\)/);

@@ -179,13 +179,16 @@ if (!fs.existsSync(generatedManifestPath)) {
   fail('❌ compactc did not produce compiler/contract-manifest.json.');
 }
 const generatedManifest = JSON.parse(fs.readFileSync(generatedManifestPath, 'utf8'));
-for (const [field, key] of [
-  ['compiler-version', 'compiler-version'],
-  ['language-version', 'language-version'],
-  ['runtime-version', 'runtime-version'],
+for (const [manifestKey, expectedKey] of [
+  ['compiler-version', 'compilerVersion'],
+  ['language-version', 'languageVersion'],
+  ['runtime-version', 'runtimeVersion'],
 ]) {
-  if (generatedManifest[key] !== EXPECTED_TOOLCHAIN[field]) {
-    fail(`❌ Generated ${field} is ${generatedManifest[key] ?? 'missing'}; expected ${EXPECTED_TOOLCHAIN[field]}.`);
+  if (generatedManifest[manifestKey] !== EXPECTED_TOOLCHAIN[expectedKey]) {
+    fail(
+      `❌ Generated ${manifestKey} is ${generatedManifest[manifestKey] ?? 'missing'}; ` +
+        `expected ${EXPECTED_TOOLCHAIN[expectedKey]}.`
+    );
   }
 }
 
