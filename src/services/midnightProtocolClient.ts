@@ -8,6 +8,7 @@
  */
 import { Level } from 'level';
 import * as midnightJs from '@midnight-ntwrk/midnight-js';
+import { ContractState } from '@midnight-ntwrk/compact-runtime';
 import { fetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
@@ -21,7 +22,9 @@ import {
 } from '@midnight-ntwrk/midnight-js-types';
 import { Transaction } from '@midnightntwrk/ledger-v9';
 import type { ConnectedAPI, Configuration } from '@midnight-ntwrk/dapp-connector-api';
-import { Contract } from '../contracts/compiled/contract/index.js';
+import { Contract, ledger } from '../contracts/compiled/contract/index.js';
+import { LoanStatus } from '../types/horizon';
+import type { LendingPool, Loan, RepaymentEvent } from '../types/horizon';
 import { assertVerifiedDeployment } from './deploymentGate';
 import { decodeShieldedKey } from './ids';
 
@@ -79,6 +82,13 @@ export interface HorizonClientConfig {
 export interface HorizonCallResult {
   readonly txId: string;
   readonly status: string;
+}
+
+/** Public ledger state decoded from the verified on-chain contract. */
+export interface HorizonOnChainState {
+  readonly pools: LendingPool[];
+  readonly loans: Loan[];
+  readonly repayments: RepaymentEvent[];
 }
 
 type CompiledHorizonContract = ReturnType<typeof makeCompiledContract>;
@@ -252,6 +262,71 @@ export class MidnightProtocolClient {
     const states = this.providers.privateStateProvider.forContract(this.contractAddress);
     const state = await states.get(HORIZON_PRIVATE_STATE_ID);
     return state?.snapshot;
+  }
+
+  /**
+   * Reads public contract state through the wallet's indexer provider. This is
+   * the only production source for pool, loan, and repayment lists; demo
+   * localStorage values are never mixed into this result.
+   */
+  async readOnChainState(): Promise<HorizonOnChainState> {
+    const read = await this.providers.publicDataProvider.queryContractState(
+      this.contractAddress as never
+    );
+    if (!read) {
+      throw new Error('No on-chain contract state is available yet.');
+    }
+    if (read.contractState.era !== 'v9') {
+      throw new Error(`Unsupported contract state era: ${read.contractState.era}.`);
+    }
+    const decoded = read.contractState.deserialize({ v9: ContractState });
+    const state = ledger(decoded.data);
+
+    const pools: LendingPool[] = Array.from(state.pools, ([, pool]) => ({
+      pool_id: toHex(pool.pool_id),
+      lender: toHex(pool.lender),
+      min_income: pool.min_income,
+      max_debt_to_income_bps: Number(pool.max_debt_to_income_bps),
+      min_collateral_ratio_bps: Number(pool.min_collateral_ratio_bps),
+      interest_rate_bps: Number(pool.interest_rate_bps),
+      term_duration: pool.term_duration,
+      pool_liquidity: pool.pool_liquidity,
+      total_deposited: pool.total_deposited,
+      total_lent: pool.total_lent,
+      created_at: 0,
+    }));
+
+    const statuses: LoanStatus[] = [
+      LoanStatus.PENDING,
+      LoanStatus.ACTIVE,
+      LoanStatus.REPAID,
+      LoanStatus.DEFAULTED,
+      LoanStatus.LIQUIDATED,
+    ];
+    const loans: Loan[] = Array.from(state.loans, ([, loan]) => ({
+      loan_id: toHex(loan.loan_id),
+      pool_id: toHex(loan.pool_id),
+      borrower: toHex(loan.borrower),
+      loan_amount: loan.loan_amount,
+      collateral_locked: loan.collateral_locked,
+      interest_rate_bps: Number(loan.interest_rate_bps),
+      start_time: loan.start_time,
+      due_date: loan.due_date,
+      status: statuses[Number(loan.status)] || 'PENDING',
+      total_repaid: loan.total_repaid,
+      snapshot_commitment: toHex(loan.snapshot_commitment),
+    }));
+
+    const repayments: RepaymentEvent[] = Array.from(state.repayments, ([, repayment]) => ({
+      repayment_id: toHex(repayment.repayment_id),
+      loan_id: toHex(repayment.loan_id),
+      payer: toHex(repayment.payer),
+      amount: repayment.amount,
+      timestamp: repayment.timestamp,
+      tx_hash: '',
+    }));
+
+    return { pools, loans, repayments };
   }
 
   private get handle() {
