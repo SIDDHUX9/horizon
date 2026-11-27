@@ -204,7 +204,13 @@ function canonicalJson(value) {
 
 function sourceCheckManifest(manifest) {
   const copy = canonicalJson(manifest);
+  // Full key generation also writes binary ZKIR sidecars; --skip-zk does not.
   delete copy.keys;
+  if (copy.zkir?.type === 'directory') {
+    for (const name of Object.keys(copy.zkir)) {
+      if (name.endsWith('.bzkir')) delete copy.zkir[name];
+    }
+  }
   return copy;
 }
 
@@ -243,6 +249,21 @@ for (const relative of comparedFiles) {
   const generatedHash = sha256(fs.readFileSync(generated));
   const committedHash = sha256(fs.readFileSync(committed));
   if (generatedHash !== committedHash) {
+    const generatedLines = fs.readFileSync(generated, 'utf8').split(/\r?\n/);
+    const committedLines = fs.readFileSync(committed, 'utf8').split(/\r?\n/);
+    const last = Math.max(generatedLines.length, committedLines.length) - 1;
+    let line = 0;
+    while (
+      line <= last &&
+      generatedLines[line] === committedLines[line]
+    ) {
+      line += 1;
+    }
+    console.error(
+      `First difference in ${relative} at line ${line + 1}:\n` +
+        `  generated: ${generatedLines[line] ?? '<end of file>'}\n` +
+        `  committed: ${committedLines[line] ?? '<end of file>'}`
+    );
     fail(`❌ ${relative} does not match committed output. Recompile with --full and review the diff.`);
   }
 }

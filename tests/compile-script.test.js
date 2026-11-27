@@ -27,9 +27,10 @@ test('compile script maps manifest keys to pinned toolchain keys', () => {
   assert.match(source, /\['runtime-version', 'runtimeVersion'\]/);
 });
 
-test('source check ignores key hashes that only full compilation generates', () => {
+test('source check ignores key and binary ZKIR hashes that only full compilation generates', () => {
   assert.match(source, /function sourceCheckManifest\(manifest\)/);
   assert.match(source, /delete copy\.keys;/);
+  assert.match(source, /name\.endsWith\('\.bzkir'\)/);
   assert.match(source, /fullKeyGeneration \? canonicalJson\(generatedManifest\) : sourceCheckManifest\(generatedManifest\)/);
 });
 
