@@ -216,6 +216,8 @@ const committedManifest = JSON.parse(fs.readFileSync(committedManifestPath, 'utf
 const comparableGenerated = fullKeyGeneration ? canonicalJson(generatedManifest) : sourceCheckManifest(generatedManifest);
 const comparableCommitted = fullKeyGeneration ? canonicalJson(committedManifest) : sourceCheckManifest(committedManifest);
 if (JSON.stringify(comparableGenerated) !== JSON.stringify(comparableCommitted)) {
+  console.error('Generated manifest:', JSON.stringify(comparableGenerated, null, 2));
+  console.error('Committed manifest:', JSON.stringify(comparableCommitted, null, 2));
   fail('❌ compiler/contract-manifest.json does not match committed output. Recompile with --full and review the diff.');
 }
 
