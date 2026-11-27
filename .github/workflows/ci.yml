@@ -24,8 +24,7 @@ jobs:
       - name: Install pinned Compact compiler
         run: |
           compact update 0.36.1
-          compact compile --version
-          command -v compactc
+          compact compile +0.36.1 --version
       - run: npm run typecheck
       - run: npm run verify:artifacts
       - run: npm run compile:compact -- --check

@@ -14,6 +14,13 @@ test('compile script requires the pinned compiler version', () => {
   assert.match(source, /versions\/\$\{shellQuote\(EXPECTED_TOOLCHAIN\.compilerVersion\)\}/);
 });
 
+test('compile script uses the versioned Compact CLI when available', () => {
+  assert.match(source, /spawnSync\('compact', \['--version'\]/);
+  assert.match(source, /'compile',\s*`\+\$\{EXPECTED_TOOLCHAIN\.compilerVersion\}`/);
+  assert.match(source, /versionArgs = \['compile', `\+\$\{EXPECTED_TOOLCHAIN\.compilerVersion\}`, '--version'\]/);
+  assert.match(source, /COMPACTC_BIN/);
+});
+
 test('compile script separates read-only checks from full key regeneration', () => {
   assert.match(source, /process\.argv\.includes\('--check'\)/);
   assert.match(source, /process\.argv\.includes\('--full'\)/);

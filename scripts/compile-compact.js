@@ -137,10 +137,27 @@ if (process.platform === 'win32') {
     ];
   }
 } else {
-  compileCommand = process.env.COMPACTC_BIN || 'compactc';
-  compileArgs = [...compilerFlags, contractPath, tempOutputPath];
-  versionCommand = compileCommand;
-  versionArgs = ['--version'];
+  const compactCli = spawnSync('compact', ['--version'], { encoding: 'utf8' });
+  // Prefer the versioned toolchain manager. Newer Compact CLI releases ship a
+  // `~/.compact/bin/compactc` wrapper that is not always directly runnable,
+  // while `compact compile +<version>` resolves the pinned binary reliably.
+  if (!process.env.COMPACTC_BIN && !compactCli.error && compactCli.status === 0) {
+    compileCommand = 'compact';
+    compileArgs = [
+      'compile',
+      `+${EXPECTED_TOOLCHAIN.compilerVersion}`,
+      ...compilerFlags,
+      contractPath,
+      tempOutputPath,
+    ];
+    versionCommand = 'compact';
+    versionArgs = ['compile', `+${EXPECTED_TOOLCHAIN.compilerVersion}`, '--version'];
+  } else {
+    compileCommand = process.env.COMPACTC_BIN || 'compactc';
+    compileArgs = [...compilerFlags, contractPath, tempOutputPath];
+    versionCommand = compileCommand;
+    versionArgs = ['--version'];
+  }
 }
 
 checkVersion(versionCommand, versionArgs);
