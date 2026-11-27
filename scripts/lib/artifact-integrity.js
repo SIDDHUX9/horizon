@@ -36,17 +36,18 @@ export function readJson(filePath) {
  * Midnight.js 5 ZK config providers check before proving, so a mismatch here
  * means the browser artifacts cannot safely be used.
  */
-export function verifyArtifacts() {
+export function verifyArtifacts(compiledDir = COMPILED_DIR) {
   const errors = [];
+  const manifestPath = path.join(compiledDir, 'compiler/contract-manifest.json');
 
-  if (!fs.existsSync(MANIFEST_PATH)) {
+  if (!fs.existsSync(manifestPath)) {
     return {
       ok: false,
-      errors: [`Missing compiler manifest at ${path.relative(process.cwd(), MANIFEST_PATH)}`],
+      errors: [`Missing compiler manifest at ${path.relative(process.cwd(), manifestPath)}`],
     };
   }
 
-  const manifest = readJson(MANIFEST_PATH);
+  const manifest = readJson(manifestPath);
   const checks = [
     ['compiler-version', manifest['compiler-version'], EXPECTED_TOOLCHAIN.compilerVersion],
     ['language-version', manifest['language-version'], EXPECTED_TOOLCHAIN.languageVersion],
@@ -67,7 +68,7 @@ export function verifyArtifacts() {
       if (entry.type === 'directory') {
         walk(entry, childRelative);
       } else if (entry.type === 'file') {
-        const filePath = path.join(COMPILED_DIR, childRelative);
+        const filePath = path.join(compiledDir, childRelative);
         if (!fs.existsSync(filePath)) {
           errors.push(`Missing manifest artifact ${childRelative}`);
           continue;
@@ -94,13 +95,13 @@ export function verifyArtifacts() {
       `keys/${circuit}.prover`,
       `keys/${circuit}.verifier`,
     ]) {
-      if (!fs.existsSync(path.join(COMPILED_DIR, relative))) {
+      if (!fs.existsSync(path.join(compiledDir, relative))) {
         errors.push(`Missing required circuit artifact ${relative}`);
       }
     }
   }
 
-  const generatedBindings = fs.readFileSync(path.join(COMPILED_DIR, 'contract/index.js'), 'utf8');
+  const generatedBindings = fs.readFileSync(path.join(compiledDir, 'contract/index.js'), 'utf8');
   if (!generatedBindings.includes(`checkRuntimeVersion('${EXPECTED_TOOLCHAIN.runtimeVersion}')`)) {
     errors.push(`Generated bindings do not declare runtime ${EXPECTED_TOOLCHAIN.runtimeVersion}`);
   }
@@ -109,7 +110,7 @@ export function verifyArtifacts() {
     ok: errors.length === 0,
     errors,
     manifest,
-    manifestHash: sha256(fs.readFileSync(MANIFEST_PATH)),
+    manifestHash: sha256(fs.readFileSync(manifestPath)),
   };
 }
 
