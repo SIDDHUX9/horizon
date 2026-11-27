@@ -17,6 +17,7 @@ import { WalletModal } from './components/WalletModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DemoModeBanner } from './components/DemoModeBanner';
 import { PrivateStatePasswordModal } from './components/PrivateStatePasswordModal';
+import { ProductionCircuitPanel } from './components/ProductionCircuitPanel';
 import { ProtocolOfflinePanel } from './components/ProtocolOfflinePanel';
 import { 
   getAvailableMidnightWallets, 
@@ -26,7 +27,8 @@ import {
 } from './services/laceWallet';
 import { MidnightLiveIndexer } from './services/midnightLiveIndexer';
 import { getRuntimeMode, assertDemoMode, RuntimeMode } from './services/runtimeMode';
-import { isDeploymentVerified } from './services/deploymentGate';
+import { getDeploymentRecord, isDeploymentVerified } from './services/deploymentGate';
+import { explorerTransactionUrl } from './services/explorerUrls';
 import type { MidnightProtocolClient } from './services/midnightProtocolClient';
 import {
   addressToBytes32,
@@ -99,6 +101,7 @@ export const App: React.FC = () => {
   const [transactions, setTransactions] = useState<ExplorerTransaction[]>(() =>
     runtimeMode === 'demo' ? horizon.getTransactions() : []
   );
+  const [liveTransactions, setLiveTransactions] = useState<ExplorerTransaction[]>([]);
   const [blockHeight, setBlockHeight] = useState<number>(() =>
     runtimeMode === 'demo' ? horizon.getBlockHeight() : 0
   );
@@ -107,6 +110,12 @@ export const App: React.FC = () => {
   );
 
   const [currentCommitment, setCurrentCommitment] = useState<string | undefined>(undefined);
+
+  const canonicalNetwork = toCanonicalNetworkId(networkId || selectedNetwork);
+  const deploymentVerified = isDeploymentVerified(canonicalNetwork);
+  const productionReady =
+    runtimeMode === 'production' && deploymentVerified && protocolClient !== null;
+  const deploymentContractAddress = getDeploymentRecord().contractAddress || '';
 
   const [selectedPoolForBorrow, setSelectedPoolForBorrow] = useState<string | undefined>(undefined);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -123,16 +132,39 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     checkLace();
-    const fetchLiveHeight = async () => {
+    const fetchLiveData = async () => {
       const blocks = await MidnightLiveIndexer.getLatestBlocks(1);
       if (blocks.length > 0 && blocks[0].height) {
         setBlockHeight(blocks[0].height);
       }
+      if (runtimeMode === 'production' && deploymentVerified) {
+        const latest = await MidnightLiveIndexer.getLatestTransactions(20);
+        setLiveTransactions(
+          latest.map((tx) => ({
+            tx_hash: tx.hash,
+            block_height: tx.blockHeight,
+            circuit: tx.entryPoint || tx.actionType,
+            caller: 'public indexer',
+            timestamp: tx.timestamp,
+            public_data: {
+              action: tx.actionType,
+              status: tx.status,
+              fees: tx.paidFees,
+            },
+            hidden_private_data: {},
+            proof_verified: false,
+            onchain_confirmed: true,
+            explorer_url: explorerTransactionUrl(tx.hash),
+          }))
+        );
+      } else {
+        setLiveTransactions([]);
+      }
     };
-    fetchLiveHeight();
-    const timer = setInterval(fetchLiveHeight, 15000);
+    void fetchLiveData();
+    const timer = setInterval(fetchLiveData, 15000);
     return () => clearInterval(timer);
-  }, []);
+  }, [runtimeMode, deploymentVerified]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -305,6 +337,30 @@ export const App: React.FC = () => {
     const timer = setInterval(() => setCurrentTime(horizon.getCurrentTime()), 5000);
     return () => clearInterval(timer);
   }, [runtimeMode]);
+
+  useEffect(() => {
+    if (runtimeMode !== 'production' || !protocolClient) return;
+    let cancelled = false;
+    const refreshOnChainState = async () => {
+      try {
+        const state = await protocolClient.readOnChainState();
+        if (cancelled) return;
+        setPools(state.pools);
+        setLoans(state.loans);
+        setRepayments(state.repayments);
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('Unable to read on-chain protocol state yet:', err);
+        }
+      }
+    };
+    void refreshOnChainState();
+    const timer = setInterval(refreshOnChainState, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [runtimeMode, protocolClient]);
 
   const handleAdvanceTime = (days: number) => {
     try {
@@ -739,7 +795,21 @@ export const App: React.FC = () => {
           {activeTab === 'pitch' && <DualLedgerPitch onNavigate={handleNavigate} />}
 
           {activeTab === 'lender' &&
-            (runtimeMode === 'demo' ? (
+            (productionReady ? (
+              <ProductionCircuitPanel
+                pools={pools}
+                loans={loans}
+                contractAddress={deploymentContractAddress}
+                blockHeight={blockHeight}
+                userAddress={userAddress || ''}
+                userNightBalance={userNightBalance}
+                onCreatePool={handleCreatePool}
+                onSnapshotSubmitted={handleSnapshotSubmitted}
+                onRequestLoan={handleRequestLoan}
+                onRepayLoan={handleRepayLoan}
+                onLiquidate={handleLiquidate}
+              />
+            ) : runtimeMode === 'demo' ? (
               <LenderHub
                 pools={pools}
                 onCreatePool={handleCreatePool}
@@ -751,7 +821,21 @@ export const App: React.FC = () => {
             ))}
 
           {activeTab === 'borrower' &&
-            (runtimeMode === 'demo' ? (
+            (productionReady ? (
+              <ProductionCircuitPanel
+                pools={pools}
+                loans={loans}
+                contractAddress={deploymentContractAddress}
+                blockHeight={blockHeight}
+                userAddress={userAddress || ''}
+                userNightBalance={userNightBalance}
+                onCreatePool={handleCreatePool}
+                onSnapshotSubmitted={handleSnapshotSubmitted}
+                onRequestLoan={handleRequestLoan}
+                onRepayLoan={handleRepayLoan}
+                onLiquidate={handleLiquidate}
+              />
+            ) : runtimeMode === 'demo' ? (
               <BorrowerStudio
                 pools={pools}
                 selectedPoolId={selectedPoolForBorrow}
@@ -766,7 +850,21 @@ export const App: React.FC = () => {
             ))}
 
           {activeTab === 'loans' &&
-            (runtimeMode === 'demo' ? (
+            (productionReady ? (
+              <ProductionCircuitPanel
+                pools={pools}
+                loans={loans}
+                contractAddress={deploymentContractAddress}
+                blockHeight={blockHeight}
+                userAddress={userAddress || ''}
+                userNightBalance={userNightBalance}
+                onCreatePool={handleCreatePool}
+                onSnapshotSubmitted={handleSnapshotSubmitted}
+                onRequestLoan={handleRequestLoan}
+                onRepayLoan={handleRepayLoan}
+                onLiquidate={handleLiquidate}
+              />
+            ) : runtimeMode === 'demo' ? (
               <LoanDetailTerminal
                 loans={loans}
                 repayments={repayments}
@@ -779,7 +877,21 @@ export const App: React.FC = () => {
             ))}
 
           {activeTab === 'liquidate' &&
-            (runtimeMode === 'demo' ? (
+            (productionReady ? (
+              <ProductionCircuitPanel
+                pools={pools}
+                loans={loans}
+                contractAddress={deploymentContractAddress}
+                blockHeight={blockHeight}
+                userAddress={userAddress || ''}
+                userNightBalance={userNightBalance}
+                onCreatePool={handleCreatePool}
+                onSnapshotSubmitted={handleSnapshotSubmitted}
+                onRequestLoan={handleRequestLoan}
+                onRepayLoan={handleRepayLoan}
+                onLiquidate={handleLiquidate}
+              />
+            ) : runtimeMode === 'demo' ? (
               <LiquidationTerminal
                 loans={loans}
                 currentTime={currentTime}
@@ -792,14 +904,16 @@ export const App: React.FC = () => {
 
           {activeTab === 'explorer' && (
             <TransparencyExplorer
-              transactions={runtimeMode === 'demo' ? transactions : []}
+              transactions={runtimeMode === 'demo' ? transactions : liveTransactions}
               blockHeight={blockHeight}
-              loans={runtimeMode === 'demo' ? loans : []}
-              pools={runtimeMode === 'demo' ? pools : []}
-              repayments={runtimeMode === 'demo' ? repayments : []}
+              loans={loans}
+              pools={pools}
+              repayments={repayments}
               laceSession={laceSession}
               onOpenWalletModal={() => setWalletModalOpen(true)}
               runtimeMode={runtimeMode}
+              deploymentVerified={deploymentVerified}
+              contractAddress={deploymentContractAddress}
             />
           )}
 

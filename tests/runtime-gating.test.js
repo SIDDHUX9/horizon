@@ -41,14 +41,31 @@ test('production client connection is deployment-gated and password-protected', 
   assert.ok(app.includes('<ProtocolOfflinePanel'));
 });
 
+test('verified production sessions render circuit handlers instead of the offline panel', () => {
+  const app = read('src/App.tsx');
+  assert.ok(
+    app.includes(
+      "const productionReady =\n    runtimeMode === 'production' && deploymentVerified && protocolClient !== null;"
+    )
+  );
+  assert.ok(app.includes('productionReady ? ('));
+  assert.equal((app.match(/productionReady \? \(/g) || []).length, 4);
+  assert.equal((app.match(/<ProductionCircuitPanel/g) || []).length, 4);
+  assert.ok(app.includes('readOnChainState()'));
+});
+
 test('explorer hides simulator rows and dev deployment controls in production', () => {
   const app = read('src/App.tsx');
   const explorer = read('src/components/TransparencyExplorer.tsx');
-  for (const value of ['transactions', 'loans', 'pools', 'repayments']) {
-    assert.ok(app.includes(`runtimeMode === 'demo' ? ${value} : []`));
+  assert.ok(app.includes("transactions={runtimeMode === 'demo' ? transactions : liveTransactions}"));
+  for (const value of ['loans', 'pools', 'repayments']) {
+    assert.ok(app.includes(`${value}={${value}}`));
   }
   assert.ok(app.includes('runtimeMode={runtimeMode}'));
+  assert.ok(app.includes('deploymentVerified={deploymentVerified}'));
   assert.ok(explorer.includes("runtimeMode === 'demo' && import.meta.env.DEV"));
+  assert.ok(explorer.includes('if (!showDevDeployment) return;'));
   assert.ok(explorer.includes("{showDevDeployment && ("));
   assert.equal((explorer.match(/\{showDevDeployment && \(/g) || []).length, 2);
+  assert.ok(explorer.includes('Verified Contract Audit: Public vs Private'));
 });

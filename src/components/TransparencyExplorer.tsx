@@ -45,6 +45,8 @@ interface TransparencyExplorerProps {
   laceSession?: LaceConnectedSession | null;
   onOpenWalletModal?: () => void;
   runtimeMode: RuntimeMode;
+  deploymentVerified: boolean;
+  contractAddress?: string | null;
 }
 
 export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
@@ -56,6 +58,8 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
   laceSession,
   onOpenWalletModal,
   runtimeMode,
+  deploymentVerified,
+  contractAddress,
 }) => {
   const [filterCircuit, setFilterCircuit] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -70,7 +74,31 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const showDevDeployment = runtimeMode === 'demo' && import.meta.env.DEV;
 
+  const isDemo = runtimeMode === 'demo';
+  const contractVerified = isDemo ? Boolean(deployedContract?.verifiedOnChain) : deploymentVerified;
+  const visibleContractAddress = isDemo ? deployedContract?.contractAddress : contractAddress;
+  const auditTitle = isDemo
+    ? 'Demo Ledger Audit: Public vs Private'
+    : 'Verified Contract Audit: Public vs Private';
+  const auditSubtitle = isDemo
+    ? 'Side-by-side view of simulated protocol state. No verified Horizon contract deployment is used in demo mode.'
+    : 'Side-by-side view of public contract state and the private witness rules enforced by the verified circuit.';
+  const publicStateTitle = isDemo ? 'Demo Public Ledger State' : 'Verified Public Ledger State';
+  const publicStateNote = isDemo
+    ? 'Simulated pool, loan, and repayment accounting stored in this browser.'
+    : 'Pool, loan, and repayment accounting decoded from the verified contract state.';
+  const publicStateFooter = isDemo
+    ? 'These fields are visible in the demo ledger. They are not on-chain and are not consensus-verified.'
+    : 'These fields are public contract state decoded from the verified deployment.';
+  const witnessNote = isDemo
+    ? 'In the demo these values stay in browser state and are not submitted.'
+    : 'In production these values stay in encrypted private state and are proved without disclosure.';
+  const privacyFooter = isDemo
+    ? 'Demo privacy: raw values stay in browser state; no zero-knowledge proof is generated yet.'
+    : 'Production privacy: raw values stay in encrypted local private state; the circuit proves eligibility without disclosure.';
+
   useEffect(() => {
+    if (!showDevDeployment) return;
     const checkServer = async () => {
       const status = await HorizonDeployer.checkStatus();
       setProofServerOnline(status.proofServerOnline);
@@ -79,7 +107,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
       }
     };
     checkServer();
-  }, []);
+  }, [showDevDeployment]);
 
   const handleStartDeployment = async () => {
     if (!showDevDeployment) {
@@ -164,7 +192,13 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-[#11161a] tracking-tight">Midnight Blockchain Explorer & Transparency Audit</h2>
           <p className="text-sm text-[#525f6c] leading-relaxed">
-            This explorer combines <strong>live block height</strong> from the Midnight Preview indexer with <strong>local demo ledger records</strong>. No verified Horizon contract deployment exists yet, so protocol rows below are simulations rather than on-chain state.
+            {isDemo ? (
+              <>This explorer combines <strong>live block height</strong> with <strong>local demo ledger records</strong>. Protocol rows below are simulations, not on-chain state.</>
+            ) : deploymentVerified ? (
+              <>This explorer shows <strong>verified contract state</strong> decoded from the canonical deployment plus live Midnight block and transaction data. Private witness values are never published.</>
+            ) : (
+              <>No verified Horizon deployment exists on this network. Circuit actions are disabled; only public network activity is shown.</>
+            )}
           </p>
         </div>
 
@@ -204,23 +238,23 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-sans font-bold border ${
-                deployedContract?.verifiedOnChain
+                contractVerified
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                   : 'bg-amber-100 text-amber-900 border-amber-300'
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${deployedContract?.verifiedOnChain ? 'bg-emerald-600 animate-pulse' : 'bg-amber-600'}`} />
-                {deployedContract?.verifiedOnChain ? 'VERIFIED ON-CHAIN' : 'NOT DEPLOYED'}
+                <span className={`w-1.5 h-1.5 rounded-full ${contractVerified ? 'bg-emerald-600 animate-pulse' : 'bg-amber-600'}`} />
+                {contractVerified ? 'VERIFIED ON-CHAIN' : 'NOT DEPLOYED'}
               </span>
               <span className="text-[#707e8c] font-sans">Contract:</span>
             </div>
             <span className="text-[#11161a] font-bold break-all font-mono">
-              {deployedContract?.contractAddress || 'None'}
+              {visibleContractAddress || 'None'}
             </span>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
-            {deployedContract?.contractAddress && (
+            {visibleContractAddress && (
               <a
-                href={explorerContractUrl(deployedContract.contractAddress || '')}
+                href={explorerContractUrl(visibleContractAddress)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-[#11161a] hover:opacity-75 font-sans font-semibold transition underline shrink-0 py-1.5"
@@ -425,10 +459,10 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
           <div>
             <h3 className="text-lg font-bold text-[#11161a] flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#11161a]" />
-              <span>Demo Ledger Audit: Public vs Private</span>
+              <span>{auditTitle}</span>
             </h3>
             <p className="text-xs text-[#525f6c]">
-              Side-by-side view of simulated protocol state. No verified Horizon contract deployment exists yet.
+              {auditSubtitle}
             </p>
           </div>
 
@@ -462,9 +496,9 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#11161a] uppercase tracking-wider font-mono">
-                        Demo Public Ledger State
+                        {publicStateTitle}
                       </h4>
-                      <p className="text-[11px] text-[#525f6c]">Simulated pool, loan, and repayment accounting stored in this browser.</p>
+                      <p className="text-[11px] text-[#525f6c]">{publicStateNote}</p>
                     </div>
                   </div>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
@@ -478,7 +512,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
 
                 <div className="space-y-2.5 font-mono text-xs">
                   <div className="p-3 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5] flex justify-between items-center">
-                    <span className="text-[#707e8c] font-sans">Loan ID (Demo Key):</span>
+                    <span className="text-[#707e8c] font-sans">Loan ID:</span>
                     <span className="text-[#11161a] font-bold truncate max-w-[220px]" title={activeLoan.loan_id}>
                       {activeLoan.loan_id}
                     </span>
@@ -542,7 +576,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                       <span className="text-[#707e8c] font-normal">{loanRepayments.length} Recorded</span>
                     </div>
                     {loanRepayments.length === 0 ? (
-                      <div className="text-[11px] text-[#707e8c] font-sans italic">No simulated repayments recorded yet.</div>
+                      <div className="text-[11px] text-[#707e8c] font-sans italic">No repayments recorded yet.</div>
                     ) : (
                       loanRepayments.map((r) => (
                         <div key={r.repayment_id} className="text-[10px] flex justify-between items-center py-1 border-b border-[#eaeae5]">
@@ -554,7 +588,9 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                   </div>
 
                   <div className="p-3 rounded-2xl bg-[#f8f8f6] border border-[#eaeae5]">
-                    <span className="text-[#707e8c] block text-[10px] font-sans font-medium uppercase tracking-wider">Demo Snapshot Commitment (SHA-256 Digest)</span>
+                    <span className="text-[#707e8c] block text-[10px] font-sans font-medium uppercase tracking-wider">
+                      {isDemo ? 'Demo Snapshot Commitment (SHA-256 Digest)' : 'On-chain Snapshot Commitment'}
+                    </span>
                     <span className="text-[#553c9a] break-all text-[11px] font-bold">{activeLoan.snapshot_commitment}</span>
                   </div>
                 </div>
@@ -562,7 +598,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
 
               <div className="pt-4 border-t border-[#eaeae5] text-[11px] text-[#525f6c] flex items-center gap-2 font-mono">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>These fields are visible in the demo ledger. They are not on-chain and are not yet consensus-verified.</span>
+                <span>{publicStateFooter}</span>
               </div>
             </div>
 
@@ -578,7 +614,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                       <h4 className="text-sm font-bold text-[#553c9a] uppercase tracking-wider font-mono">
                         Cryptographically Hidden Witness
                       </h4>
-                      <p className="text-[11px] text-[#707e8c]">In the demo these values stay in browser state and are not submitted.</p>
+                      <p className="text-[11px] text-[#707e8c]">{witnessNote}</p>
                     </div>
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#f0eefc] text-[#553c9a] border border-[#d8d0f5]">
@@ -596,7 +632,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] text-[#525f6c] font-sans">
-                      Demo inequality check: <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">actual_income ≥ min_income (${Number(associatedPool?.min_income || 50000).toLocaleString()})</code> evaluated locally without publishing the borrower's exact salary.
+                      {isDemo ? 'Demo inequality check' : 'Circuit inequality check'}: <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">actual_income ≥ min_income (${Number(associatedPool?.min_income || 50000).toLocaleString()})</code> without publishing the borrower's exact salary.
                     </div>
                   </div>
 
@@ -622,7 +658,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] text-[#525f6c] font-sans">
-                      Demo inequality check: <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">computed_dti ≤ max_dti ({formatBps(associatedPool?.max_debt_to_income_bps || 4000)})</code> ceiling evaluated locally.
+                      {isDemo ? 'Demo inequality check' : 'Circuit inequality check'}: <code className="text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">computed_dti ≤ max_dti ({formatBps(associatedPool?.max_debt_to_income_bps || 4000)})</code> ceiling enforced in the proof.
                     </div>
                   </div>
 
@@ -653,13 +689,15 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
 
               <div className="pt-4 border-t border-[#e5dff7] text-[11px] text-[#553c9a] flex items-center gap-2 font-mono">
                 <ShieldCheck className="w-4 h-4 text-[#553c9a] shrink-0" />
-                <span>Demo privacy: raw values stay in browser state; no zero-knowledge proof is generated yet.</span>
+                <span>{privacyFooter}</span>
               </div>
             </div>
           </div>
         ) : (
           <div className="bg-white border border-[#eaeae5] rounded-3xl p-10 text-center text-[#707e8c] text-xs shadow-sm">
-            No active loans found in the demo ledger. Create a pool and request a loan in the Borrower Studio.
+            {isDemo
+              ? 'No active loans found in the demo ledger. Create a pool and request a loan in the Borrower Studio.'
+              : 'No active loans found in the verified contract state.'}
           </div>
         )}
       </div>
@@ -670,9 +708,13 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
           <div>
             <h3 className="text-base font-bold text-[#11161a] flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#11161a]" />
-              <span>Local Transaction Stream ({filteredTx.length})</span>
+              <span>{isDemo ? 'Local Transaction Stream' : 'Live Midnight Transaction Stream'} ({filteredTx.length})</span>
             </h3>
-            <p className="text-xs text-[#525f6c]">Simulated protocol events plus any indexer-confirmed deployment records.</p>
+            <p className="text-xs text-[#525f6c]">
+              {isDemo
+                ? 'Simulated protocol events plus any indexer-confirmed deployment records.'
+                : 'Indexer transactions from the configured network; private witness values remain sealed.'}
+            </p>
           </div>
 
           <div className="relative w-full sm:w-72">
@@ -710,7 +752,9 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
         <div className="space-y-4">
           {filteredTx.length === 0 ? (
             <div className="bg-white border border-[#eaeae5] rounded-3xl p-12 text-center text-[#707e8c] text-xs shadow-sm">
-              No matching transactions found on the simulated Midnight ledger.
+              {isDemo
+                ? 'No matching transactions found on the simulated Midnight ledger.'
+                : 'No matching transactions found on the live Midnight indexer.'}
             </div>
           ) : (
             filteredTx.map((tx) => (
@@ -787,7 +831,7 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
                   <div className="p-4 rounded-2xl bg-[#fcfbfe] border border-[#e5dff7] space-y-2">
                     <div className="flex items-center gap-2 text-[#553c9a] text-xs font-bold uppercase tracking-wider font-sans">
                       <EyeOff className="w-3.5 h-3.5" />
-                      <span>{tx.proof_verified ? 'Shielded Witness' : 'Demo Private Values'}</span>
+                      <span>{tx.proof_verified ? 'Shielded Witness' : isDemo ? 'Demo Private Values' : 'Private Values Not Exposed'}</span>
                     </div>
 
                     <div className="space-y-1 font-mono text-xs">
@@ -803,10 +847,14 @@ export const TransparencyExplorer: React.FC<TransparencyExplorerProps> = ({
 
                 {/* Verification Footer */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 text-xs text-[#707e8c] font-mono">
-                  {tx.proof_verified && tx.onchain_confirmed ? (
+                  {tx.onchain_confirmed ? (
                     <div className="flex items-center gap-2 text-emerald-700 text-[11px] font-sans font-semibold">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Indexer-confirmed on-chain transaction</span>
+                      <span>
+                        {tx.proof_verified
+                          ? 'Indexer-confirmed on-chain transaction'
+                          : 'Indexer-confirmed; proof details not exposed by this client'}
+                      </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-amber-800 text-[11px] font-sans font-semibold">
